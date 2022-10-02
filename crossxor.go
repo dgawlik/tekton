@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"math/rand"
 	"time"
+	"unsafe"
 )
 
 var generate = flag.Bool("generate", false, "Generates random 128-bit hex string")
@@ -157,12 +158,13 @@ func (a *BitVector) crossProd16(b *BitVector) BitVector {
 func (a *BitVector) crossProd32(b *BitVector) BitVector {
 	var result BitVector
 
-	for i := 0; i < 16; i += 4 {
-		result[i] = a[i] ^ b[i+2]
-		result[i+2] = a[i+2] ^ b[i]
+	cA := (*[8]uint16)(unsafe.Pointer(&a[0]))
+	cB := (*[8]uint16)(unsafe.Pointer(&b[0]))
+	cResult := (*[8]uint16)(unsafe.Pointer(&result[0]))
 
-		result[i+1] = a[i+1] ^ b[i+3]
-		result[i+3] = a[i+3] ^ b[i+1]
+	for i := 0; i < 7; i++ {
+		cResult[i] = cA[i] ^ cB[i+1]
+		cResult[i+1] = cA[i+1] ^ cB[i]
 	}
 
 	return result
@@ -171,19 +173,13 @@ func (a *BitVector) crossProd32(b *BitVector) BitVector {
 func (a *BitVector) crossProd64(b *BitVector) BitVector {
 	var result BitVector
 
-	for i := 0; i < 16; i += 8 {
-		result[i] = a[i] ^ b[i+4]
-		result[i+4] = a[i+4] ^ b[i]
+	cA := (*[4]uint32)(unsafe.Pointer(&a[0]))
+	cB := (*[4]uint32)(unsafe.Pointer(&b[0]))
+	cResult := (*[4]uint32)(unsafe.Pointer(&result[0]))
 
-		result[i+1] = a[i+1] ^ b[i+5]
-		result[i+5] = a[i+5] ^ b[i+1]
-
-		result[i+2] = a[i+2] ^ b[i+6]
-		result[i+6] = a[i+6] ^ b[i+2]
-
-		result[i+3] = a[i+3] ^ b[i+7]
-		result[i+7] = a[i+7] ^ b[i+3]
-
+	for i := 0; i < 3; i++ {
+		cResult[i] = cA[i] ^ cB[i+1]
+		cResult[i+1] = cA[i+1] ^ cB[i]
 	}
 
 	return result
@@ -192,29 +188,12 @@ func (a *BitVector) crossProd64(b *BitVector) BitVector {
 func (a *BitVector) crossProd128(b *BitVector) BitVector {
 	var result BitVector
 
-	result[0] = a[0] ^ b[8]
-	result[8] = a[8] ^ b[0]
+	cA := (*[2]uint64)(unsafe.Pointer(&a[0]))
+	cB := (*[2]uint64)(unsafe.Pointer(&b[0]))
+	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
 
-	result[1] = a[1] ^ b[9]
-	result[9] = a[9] ^ b[1]
-
-	result[2] = a[2] ^ b[10]
-	result[10] = a[10] ^ b[2]
-
-	result[3] = a[3] ^ b[11]
-	result[11] = a[11] ^ b[3]
-
-	result[4] = a[4] ^ b[12]
-	result[12] = a[12] ^ b[4]
-
-	result[5] = a[5] ^ b[13]
-	result[13] = a[13] ^ b[5]
-
-	result[6] = a[6] ^ b[14]
-	result[14] = a[14] ^ b[6]
-
-	result[7] = a[7] ^ b[15]
-	result[15] = a[15] ^ b[7]
+	cResult[0] = cA[0] ^ cB[1]
+	cResult[1] = cA[1] ^ cB[0]
 
 	return result
 }
@@ -222,12 +201,16 @@ func (a *BitVector) crossProd128(b *BitVector) BitVector {
 func (a *BitVector) crossProd2(b *BitVector) BitVector {
 	var result BitVector
 
-	maskOdd := byte(0b10101010)
-	maskEven := byte(0b01010101)
+	cA := (*[2]uint64)(unsafe.Pointer(&a[0]))
+	cB := (*[2]uint64)(unsafe.Pointer(&b[0]))
+	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
 
-	for j := 0; j < 16; j++ {
-		result[j] |= (a[j] ^ (b[j] << 1)) & maskOdd
-		result[j] |= (a[j] ^ (b[j] >> 1)) & maskEven
+	maskOdd := uint64(0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010)
+	maskEven := uint64(0b01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101)
+
+	for j := 0; j < 2; j++ {
+		cResult[j] |= (cA[j] ^ (cB[j] << 1)) & maskOdd
+		cResult[j] |= (cA[j] ^ (cB[j] >> 1)) & maskEven
 	}
 
 	return result
@@ -236,12 +219,16 @@ func (a *BitVector) crossProd2(b *BitVector) BitVector {
 func (a *BitVector) crossProd4(b *BitVector) BitVector {
 	var result BitVector
 
-	maskOdd := byte(0b11001100)
-	maskEven := byte(0b00110011)
+	cA := (*[2]uint64)(unsafe.Pointer(&a[0]))
+	cB := (*[2]uint64)(unsafe.Pointer(&b[0]))
+	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
 
-	for j := 0; j < 16; j++ {
-		result[j] |= (a[j] ^ (b[j] << 2)) & maskOdd
-		result[j] |= (a[j] ^ (b[j] >> 2)) & maskEven
+	maskOdd := uint64(0b11001100_11001100_11001100_11001100_11001100_11001100_11001100_11001100)
+	maskEven := uint64(0b00110011_00110011_00110011_00110011_00110011_00110011_00110011_00110011)
+
+	for j := 0; j < 2; j++ {
+		cResult[j] |= (cA[j] ^ (cB[j] << 2)) & maskOdd
+		cResult[j] |= (cA[j] ^ (cB[j] >> 2)) & maskEven
 	}
 
 	return result
@@ -250,12 +237,16 @@ func (a *BitVector) crossProd4(b *BitVector) BitVector {
 func (a *BitVector) crossProd8(b *BitVector) BitVector {
 	var result BitVector
 
-	maskOdd := byte(0b11110000)
-	maskEven := byte(0b00001111)
+	cA := (*[2]uint64)(unsafe.Pointer(&a[0]))
+	cB := (*[2]uint64)(unsafe.Pointer(&b[0]))
+	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
 
-	for j := 0; j < 16; j++ {
-		result[j] |= (a[j] ^ (b[j] << 4)) & maskOdd
-		result[j] |= (a[j] ^ (b[j] >> 4)) & maskEven
+	maskOdd := uint64(0b11110000_11110000_11110000_11110000_11110000_11110000_11110000_11110000)
+	maskEven := uint64(0b00001111_00001111_00001111_00001111_00001111_00001111_00001111_00001111)
+
+	for j := 0; j < 2; j++ {
+		cResult[j] |= (cA[j] ^ (cB[j] << 4)) & maskOdd
+		cResult[j] |= (cA[j] ^ (cB[j] >> 4)) & maskEven
 	}
 
 	return result
