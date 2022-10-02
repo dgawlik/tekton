@@ -147,9 +147,16 @@ func (a BitVector) sub(b BitVector) BitVector {
 func (a *BitVector) crossProd16(b *BitVector) BitVector {
 	var result BitVector
 
-	for i := 0; i < 16; i += 2 {
-		result[i] = a[i] ^ b[i+1]
-		result[i+1] = a[i+1] ^ b[i]
+	cA := (*[2]uint64)(unsafe.Pointer(&a[0]))
+	cB := (*[2]uint64)(unsafe.Pointer(&b[0]))
+	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
+
+	maskOdd := uint64(0b11111111_00000000_11111111_00000000_11111111_00000000_11111111_00000000)
+	maskEven := uint64(0b00000000_11111111_00000000_11111111_00000000_11111111_00000000_11111111)
+
+	for j := 0; j < 2; j++ {
+		cResult[j] |= (cA[j] ^ (cB[j] << 8)) & maskOdd
+		cResult[j] |= (cA[j] ^ (cB[j] >> 8)) & maskEven
 	}
 
 	return result
@@ -158,13 +165,16 @@ func (a *BitVector) crossProd16(b *BitVector) BitVector {
 func (a *BitVector) crossProd32(b *BitVector) BitVector {
 	var result BitVector
 
-	cA := (*[8]uint16)(unsafe.Pointer(&a[0]))
-	cB := (*[8]uint16)(unsafe.Pointer(&b[0]))
-	cResult := (*[8]uint16)(unsafe.Pointer(&result[0]))
+	cA := (*[2]uint64)(unsafe.Pointer(&a[0]))
+	cB := (*[2]uint64)(unsafe.Pointer(&b[0]))
+	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
 
-	for i := 0; i < 7; i++ {
-		cResult[i] = cA[i] ^ cB[i+1]
-		cResult[i+1] = cA[i+1] ^ cB[i]
+	maskOdd := uint64(0b11111111_11111111_00000000_00000000_11111111_11111111_00000000_00000000)
+	maskEven := uint64(0b00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111)
+
+	for j := 0; j < 2; j++ {
+		cResult[j] |= (cA[j] ^ (cB[j] << 16)) & maskOdd
+		cResult[j] |= (cA[j] ^ (cB[j] >> 16)) & maskEven
 	}
 
 	return result
@@ -173,13 +183,16 @@ func (a *BitVector) crossProd32(b *BitVector) BitVector {
 func (a *BitVector) crossProd64(b *BitVector) BitVector {
 	var result BitVector
 
-	cA := (*[4]uint32)(unsafe.Pointer(&a[0]))
-	cB := (*[4]uint32)(unsafe.Pointer(&b[0]))
-	cResult := (*[4]uint32)(unsafe.Pointer(&result[0]))
+	cA := (*[2]uint64)(unsafe.Pointer(&a[0]))
+	cB := (*[2]uint64)(unsafe.Pointer(&b[0]))
+	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
 
-	for i := 0; i < 3; i++ {
-		cResult[i] = cA[i] ^ cB[i+1]
-		cResult[i+1] = cA[i+1] ^ cB[i]
+	maskOdd := uint64(0b11111111_11111111_11111111_11111111_00000000_00000000_00000000_00000000)
+	maskEven := uint64(0b00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111)
+
+	for j := 0; j < 2; j++ {
+		cResult[j] |= (cA[j] ^ (cB[j] << 32)) & maskOdd
+		cResult[j] |= (cA[j] ^ (cB[j] >> 32)) & maskEven
 	}
 
 	return result
