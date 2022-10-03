@@ -144,7 +144,7 @@ func (a BitVector) sub(b BitVector) BitVector {
 
 // }
 
-func (a *BitVector) crossProd16(b *BitVector) BitVector {
+func (a *BitVector) crossProd16(b *BitVector) {
 	var result BitVector
 
 	cA := (*[2]uint64)(unsafe.Pointer(&a[0]))
@@ -159,10 +159,10 @@ func (a *BitVector) crossProd16(b *BitVector) BitVector {
 		cResult[j] |= (cA[j] ^ (cB[j] >> 8)) & maskEven
 	}
 
-	return result
+	*a = result
 }
 
-func (a *BitVector) crossProd32(b *BitVector) BitVector {
+func (a *BitVector) crossProd32(b *BitVector) {
 	var result BitVector
 
 	cA := (*[2]uint64)(unsafe.Pointer(&a[0]))
@@ -177,10 +177,10 @@ func (a *BitVector) crossProd32(b *BitVector) BitVector {
 		cResult[j] |= (cA[j] ^ (cB[j] >> 16)) & maskEven
 	}
 
-	return result
+	*a = result
 }
 
-func (a *BitVector) crossProd64(b *BitVector) BitVector {
+func (a *BitVector) crossProd64(b *BitVector) {
 	var result BitVector
 
 	cA := (*[2]uint64)(unsafe.Pointer(&a[0]))
@@ -195,10 +195,10 @@ func (a *BitVector) crossProd64(b *BitVector) BitVector {
 		cResult[j] |= (cA[j] ^ (cB[j] >> 32)) & maskEven
 	}
 
-	return result
+	*a = result
 }
 
-func (a *BitVector) crossProd128(b *BitVector) BitVector {
+func (a *BitVector) crossProd128(b *BitVector) {
 	var result BitVector
 
 	cA := (*[2]uint64)(unsafe.Pointer(&a[0]))
@@ -208,10 +208,10 @@ func (a *BitVector) crossProd128(b *BitVector) BitVector {
 	cResult[0] = cA[0] ^ cB[1]
 	cResult[1] = cA[1] ^ cB[0]
 
-	return result
+	*a = result
 }
 
-func (a *BitVector) crossProd2(b *BitVector) BitVector {
+func (a *BitVector) crossProd2(b *BitVector) {
 	var result BitVector
 
 	cA := (*[2]uint64)(unsafe.Pointer(&a[0]))
@@ -226,10 +226,10 @@ func (a *BitVector) crossProd2(b *BitVector) BitVector {
 		cResult[j] |= (cA[j] ^ (cB[j] >> 1)) & maskEven
 	}
 
-	return result
+	*a = result
 }
 
-func (a *BitVector) crossProd4(b *BitVector) BitVector {
+func (a *BitVector) crossProd4(b *BitVector) {
 	var result BitVector
 
 	cA := (*[2]uint64)(unsafe.Pointer(&a[0]))
@@ -244,10 +244,10 @@ func (a *BitVector) crossProd4(b *BitVector) BitVector {
 		cResult[j] |= (cA[j] ^ (cB[j] >> 2)) & maskEven
 	}
 
-	return result
+	*a = result
 }
 
-func (a *BitVector) crossProd8(b *BitVector) BitVector {
+func (a *BitVector) crossProd8(b *BitVector) {
 	var result BitVector
 
 	cA := (*[2]uint64)(unsafe.Pointer(&a[0]))
@@ -262,7 +262,7 @@ func (a *BitVector) crossProd8(b *BitVector) BitVector {
 		cResult[j] |= (cA[j] ^ (cB[j] >> 4)) & maskEven
 	}
 
-	return result
+	*a = result
 }
 
 var SOURCE = rand.NewSource(time.Now().UnixNano())
@@ -299,13 +299,13 @@ func encode(payload []byte) string {
 func (st *State) doEncrypt(x BitVector) BitVector {
 
 	state := x
-	state = state.crossProd2(&st.Key)
-	state = state.crossProd4(&st.Key)
-	state = state.crossProd8(&st.Key)
-	state = state.crossProd16(&st.Key)
-	state = state.crossProd32(&st.Key)
-	state = state.crossProd64(&st.Key)
-	state = state.crossProd128(&st.Key)
+	state.crossProd2(&st.Key)
+	state.crossProd4(&st.Key)
+	state.crossProd8(&st.Key)
+	state.crossProd16(&st.Key)
+	state.crossProd32(&st.Key)
+	state.crossProd64(&st.Key)
+	state.crossProd128(&st.Key)
 
 	return state
 }
@@ -314,13 +314,13 @@ func (st *State) doEncrypt(x BitVector) BitVector {
 func (st *State) doDecrypt(x BitVector) BitVector {
 
 	state := x
-	state = state.crossProd128(&st.Key)
-	state = state.crossProd64(&st.Key)
-	state = state.crossProd32(&st.Key)
-	state = state.crossProd16(&st.Key)
-	state = state.crossProd8(&st.Key)
-	state = state.crossProd4(&st.Key)
-	state = state.crossProd2(&st.Key)
+	state.crossProd128(&st.Key)
+	state.crossProd64(&st.Key)
+	state.crossProd32(&st.Key)
+	state.crossProd16(&st.Key)
+	state.crossProd8(&st.Key)
+	state.crossProd4(&st.Key)
+	state.crossProd2(&st.Key)
 
 	return state
 }
