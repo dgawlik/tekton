@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/aes"
+	"encoding/hex"
 	"fmt"
 	"reflect"
 	"testing"
@@ -59,48 +61,48 @@ func TestTimeOfDecryption(t *testing.T) {
 	fmt.Printf("CrossXor decryption 1M nonces %s\n", totalTime)
 }
 
-// func TestTimeOfEncryptionAes(t *testing.T) {
-// 	key := "a291a728727ac647a53193be9583c504"
-// 	hexKey, _ := hex.DecodeString(key)
+func TestTimeOfEncryptionAes(t *testing.T) {
+	key := "a291a728727ac647a53193be9583c504"
+	hexKey, _ := hex.DecodeString(key)
 
-// 	aes, _ := aes.NewCipher(hexKey)
+	aes, _ := aes.NewCipher(hexKey)
 
-// 	var totalTime time.Duration
-// 	for i := 0; i < 1_000_000; i++ {
-// 		s := randomString()
-// 		hexS, err := hex.DecodeString(s)
-// 		if err != nil {
-// 			panic(err)
-// 		}
+	var totalTime time.Duration
+	for i := 0; i < 1_000_000; i++ {
+		s := randomString()
+		hexS, err := hex.DecodeString(s)
+		if err != nil {
+			panic(err)
+		}
 
-// 		cipher := make([]byte, 16)
-// 		start := time.Now()
-// 		aes.Encrypt(cipher, hexS)
-// 		totalTime += time.Since(start)
-// 	}
+		cipher := make([]byte, 16)
+		start := time.Now()
+		aes.Encrypt(cipher, hexS)
+		totalTime += time.Since(start)
+	}
 
-// 	fmt.Printf("AES encryption 1M nonces %s\n", totalTime)
-// }
+	fmt.Printf("AES encryption 1M nonces %s\n", totalTime)
+}
 
-// func TestTimeOfDecryptionAes(t *testing.T) {
-// 	key := "a291a728727ac647a53193be9583c504"
-// 	hexKey, _ := hex.DecodeString(key)
+func TestTimeOfDecryptionAes(t *testing.T) {
+	key := "a291a728727ac647a53193be9583c504"
+	hexKey, _ := hex.DecodeString(key)
 
-// 	aes, _ := aes.NewCipher(hexKey)
+	aes, _ := aes.NewCipher(hexKey)
 
-// 	var totalTime time.Duration
-// 	for i := 0; i < 1_000_000; i++ {
-// 		s := randomString()
-// 		hexS, err := hex.DecodeString(s)
-// 		if err != nil {
-// 			panic(err)
-// 		}
+	var totalTime time.Duration
+	for i := 0; i < 1_000_000; i++ {
+		s := randomString()
+		hexS, err := hex.DecodeString(s)
+		if err != nil {
+			panic(err)
+		}
 
-// 		cipher := make([]byte, 16)
-// 		start := time.Now()
-// 		aes.Decrypt(cipher, hexS)
-// 		totalTime += time.Since(start)
-// 	}
+		cipher := make([]byte, 16)
+		start := time.Now()
+		aes.Decrypt(cipher, hexS)
+		totalTime += time.Since(start)
+	}
 
-// 	fmt.Printf("AES decryption 1M nonces %s\n", totalTime)
-// }
+	fmt.Printf("AES decryption 1M nonces %s\n", totalTime)
+}

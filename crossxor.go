@@ -368,28 +368,144 @@ func (st *State) doEncrypt(x BitVector) BitVector {
 
 	state := x
 	st.permuteSubstitute(&state)
-	state.crossProd2(&st.Key)
-	state.crossProd4(&st.Key)
-	state.crossProd8(&st.Key)
-	state.crossProd16(&st.Key)
-	state.crossProd32(&st.Key)
-	state.crossProd64(&st.Key)
-	state.crossProd128(&st.Key)
 
-	return state
+	var result BitVector
+
+	cA := (*[2]uint64)(unsafe.Pointer(&state[0]))
+	cB := (*[2]uint64)(unsafe.Pointer(&st.Key[0]))
+	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
+
+	maskOdd2 := uint64(0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010)
+	maskEven2 := uint64(0b01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101)
+
+	maskOdd4 := uint64(0b11001100_11001100_11001100_11001100_11001100_11001100_11001100_11001100)
+	maskEven4 := uint64(0b00110011_00110011_00110011_00110011_00110011_00110011_00110011_00110011)
+
+	maskOdd8 := uint64(0b11110000_11110000_11110000_11110000_11110000_11110000_11110000_11110000)
+	maskEven8 := uint64(0b00001111_00001111_00001111_00001111_00001111_00001111_00001111_00001111)
+
+	maskOdd16 := uint64(0b11111111_00000000_11111111_00000000_11111111_00000000_11111111_00000000)
+	maskEven16 := uint64(0b00000000_11111111_00000000_11111111_00000000_11111111_00000000_11111111)
+
+	maskOdd32 := uint64(0b11111111_11111111_00000000_00000000_11111111_11111111_00000000_00000000)
+	maskEven32 := uint64(0b00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111)
+
+	maskOdd64 := uint64(0b11111111_11111111_11111111_11111111_00000000_00000000_00000000_00000000)
+	maskEven64 := uint64(0b00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111)
+
+	for j := 0; j < 2; j++ {
+		cResult[j] |= (cA[j] ^ (cB[j] << 1)) & maskOdd2
+		cResult[j] |= (cA[j] ^ (cB[j] >> 1)) & maskEven2
+
+		cA[j] = cResult[j]
+		cResult[j] = uint64(0)
+
+		cResult[j] |= (cA[j] ^ (cB[j] << 2)) & maskOdd4
+		cResult[j] |= (cA[j] ^ (cB[j] >> 2)) & maskEven4
+
+		cA[j] = cResult[j]
+		cResult[j] = uint64(0)
+
+		cResult[j] |= (cA[j] ^ (cB[j] << 4)) & maskOdd8
+		cResult[j] |= (cA[j] ^ (cB[j] >> 4)) & maskEven8
+
+		cA[j] = cResult[j]
+		cResult[j] = uint64(0)
+
+		cResult[j] |= (cA[j] ^ (cB[j] << 8)) & maskOdd16
+		cResult[j] |= (cA[j] ^ (cB[j] >> 8)) & maskEven16
+
+		cA[j] = cResult[j]
+		cResult[j] = uint64(0)
+
+		cResult[j] |= (cA[j] ^ (cB[j] << 16)) & maskOdd32
+		cResult[j] |= (cA[j] ^ (cB[j] >> 16)) & maskEven32
+
+		cA[j] = cResult[j]
+		cResult[j] = uint64(0)
+
+		cResult[j] |= (cA[j] ^ (cB[j] << 32)) & maskOdd64
+		cResult[j] |= (cA[j] ^ (cB[j] >> 32)) & maskEven64
+
+		cA[j] = cResult[j]
+		cResult[j] = uint64(0)
+	}
+
+	cResult[0] = cA[0] ^ cB[1]
+	cResult[1] = cA[1] ^ cB[0]
+
+	return result
 }
 
 // not homomorphic
 func (st *State) doDecrypt(x BitVector) BitVector {
-
 	state := x
-	state.crossProd128(&st.Key)
-	state.crossProd64(&st.Key)
-	state.crossProd32(&st.Key)
-	state.crossProd16(&st.Key)
-	state.crossProd8(&st.Key)
-	state.crossProd4(&st.Key)
-	state.crossProd2(&st.Key)
+	var result BitVector
+
+	cA := (*[2]uint64)(unsafe.Pointer(&state[0]))
+	cB := (*[2]uint64)(unsafe.Pointer(&st.Key[0]))
+	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
+
+	maskOdd2 := uint64(0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010)
+	maskEven2 := uint64(0b01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101)
+
+	maskOdd4 := uint64(0b11001100_11001100_11001100_11001100_11001100_11001100_11001100_11001100)
+	maskEven4 := uint64(0b00110011_00110011_00110011_00110011_00110011_00110011_00110011_00110011)
+
+	maskOdd8 := uint64(0b11110000_11110000_11110000_11110000_11110000_11110000_11110000_11110000)
+	maskEven8 := uint64(0b00001111_00001111_00001111_00001111_00001111_00001111_00001111_00001111)
+
+	maskOdd16 := uint64(0b11111111_00000000_11111111_00000000_11111111_00000000_11111111_00000000)
+	maskEven16 := uint64(0b00000000_11111111_00000000_11111111_00000000_11111111_00000000_11111111)
+
+	maskOdd32 := uint64(0b11111111_11111111_00000000_00000000_11111111_11111111_00000000_00000000)
+	maskEven32 := uint64(0b00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111)
+
+	maskOdd64 := uint64(0b11111111_11111111_11111111_11111111_00000000_00000000_00000000_00000000)
+	maskEven64 := uint64(0b00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111)
+
+	cResult[0] = cA[0] ^ cB[1]
+	cResult[1] = cA[1] ^ cB[0]
+	cA[0], cA[1] = cResult[0], cResult[1]
+	cResult[0], cResult[1] = uint64(0), uint64(0)
+
+	for j := 0; j < 2; j++ {
+		cResult[j] |= (cA[j] ^ (cB[j] << 32)) & maskOdd64
+		cResult[j] |= (cA[j] ^ (cB[j] >> 32)) & maskEven64
+
+		cA[j] = cResult[j]
+		cResult[j] = uint64(0)
+
+		cResult[j] |= (cA[j] ^ (cB[j] << 16)) & maskOdd32
+		cResult[j] |= (cA[j] ^ (cB[j] >> 16)) & maskEven32
+
+		cA[j] = cResult[j]
+		cResult[j] = uint64(0)
+
+		cResult[j] |= (cA[j] ^ (cB[j] << 8)) & maskOdd16
+		cResult[j] |= (cA[j] ^ (cB[j] >> 8)) & maskEven16
+
+		cA[j] = cResult[j]
+		cResult[j] = uint64(0)
+
+		cResult[j] |= (cA[j] ^ (cB[j] << 4)) & maskOdd8
+		cResult[j] |= (cA[j] ^ (cB[j] >> 4)) & maskEven8
+
+		cA[j] = cResult[j]
+		cResult[j] = uint64(0)
+
+		cResult[j] |= (cA[j] ^ (cB[j] << 2)) & maskOdd4
+		cResult[j] |= (cA[j] ^ (cB[j] >> 2)) & maskEven4
+
+		cA[j] = cResult[j]
+		cResult[j] = uint64(0)
+
+		cResult[j] |= (cA[j] ^ (cB[j] << 1)) & maskOdd2
+		cResult[j] |= (cA[j] ^ (cB[j] >> 1)) & maskEven2
+
+	}
+
+	state = result
 	st.invPermuteSubstitute(&state)
 
 	return state
