@@ -23,6 +23,8 @@ type State struct {
 	Key  BitVector
 	P    [16]int
 	invP [16]int
+	S    [256]byte
+	invS [256]byte
 }
 
 func hexToVector(x string) BitVector {
@@ -156,41 +158,55 @@ func bootstrap(key BitVector) State {
 
 	var P [16]int
 	var invP [16]int
+	var S [256]byte
+	var invS [256]byte
 
 	for i := 0; i < 16; i++ {
 		P[i] = i
 	}
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 256; i++ {
+		S[i] = byte(i)
+	}
+
+	for i := 0; i < 65_000; i++ {
 		a := r.Intn(16)
 		b := r.Intn(16)
 
+		c := r.Intn(256)
+		d := r.Intn(256)
+
 		P[a], P[b] = P[b], P[a]
+		S[c], S[d] = S[d], S[c]
 	}
 
 	for i := 0; i < 16; i++ {
 		invP[P[i]] = i
 	}
 
-	return State{key, P, invP}
+	for i := 0; i < 256; i++ {
+		invS[S[i]] = byte(i)
+	}
+
+	return State{key, P, invP, S, invS}
 
 }
 
-func (st *State) permute(a *BitVector) {
+func (st *State) permuteSubstitute(a *BitVector) {
 	var result BitVector
 
 	for i := 0; i < 16; i++ {
-		result[st.P[i]] = a[i]
+		result[st.P[i]] = st.S[a[i]]
 	}
 
 	*a = result
 }
 
-func (st *State) invPermute(a *BitVector) {
+func (st *State) invPermuteSubstitute(a *BitVector) {
 	var result BitVector
 
 	for i := 0; i < 16; i++ {
-		result[st.invP[i]] = a[i]
+		result[st.invP[i]] = st.invS[a[i]]
 	}
 
 	*a = result
@@ -351,7 +367,7 @@ func encode(payload []byte) string {
 func (st *State) doEncrypt(x BitVector) BitVector {
 
 	state := x
-	st.permute(&state)
+	st.permuteSubstitute(&state)
 	state.crossProd2(&st.Key)
 	state.crossProd4(&st.Key)
 	state.crossProd8(&st.Key)
@@ -374,7 +390,7 @@ func (st *State) doDecrypt(x BitVector) BitVector {
 	state.crossProd8(&st.Key)
 	state.crossProd4(&st.Key)
 	state.crossProd2(&st.Key)
-	st.invPermute(&state)
+	st.invPermuteSubstitute(&state)
 
 	return state
 }
