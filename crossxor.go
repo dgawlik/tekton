@@ -147,55 +147,6 @@ func encode(payload []byte) string {
 	return buf.String()
 }
 
-func (st *State) encryptLong(x, key uint64) uint64 {
-	state := x
-
-	state ^= bits.RotateLeft64(key, 1)
-	state = bits.RotateLeft64(state, 1)
-
-	state ^= bits.RotateLeft64(key, 2)
-	state = bits.RotateLeft64(state, 2)
-
-	state ^= bits.RotateLeft64(key, 4)
-	state = bits.RotateLeft64(state, 4)
-
-	state ^= bits.RotateLeft64(key, 8)
-	state = bits.RotateLeft64(state, 8)
-
-	state ^= bits.RotateLeft64(key, 16)
-	state = bits.RotateLeft64(state, 16)
-
-	state ^= bits.RotateLeft64(key, 32)
-	state = bits.RotateLeft64(state, 32)
-
-	return st.substituteLong(state)
-}
-
-func (st *State) decryptLong(x, key uint64) uint64 {
-	state := st.invSubstituteLong(x)
-
-	state = bits.RotateLeft64(state, -32)
-	state ^= bits.RotateLeft64(key, 32)
-
-	state = bits.RotateLeft64(state, -16)
-	state ^= bits.RotateLeft64(key, 16)
-
-	state = bits.RotateLeft64(state, -8)
-	state ^= bits.RotateLeft64(key, 8)
-
-	state = bits.RotateLeft64(state, -4)
-	state ^= bits.RotateLeft64(key, 4)
-
-	state = bits.RotateLeft64(state, -2)
-	state ^= bits.RotateLeft64(key, 2)
-
-	state = bits.RotateLeft64(state, -1)
-	state ^= bits.RotateLeft64(key, 1)
-
-	return state
-}
-
-// not homomorphic
 func (st *State) doEncrypt(x BitVector) BitVector {
 
 	state := x
@@ -203,39 +154,115 @@ func (st *State) doEncrypt(x BitVector) BitVector {
 
 	var result BitVector
 
-	cA := (*[2]uint64)(unsafe.Pointer(&state[0]))
-	cB := (*[2]uint64)(unsafe.Pointer(&st.Key[0]))
+	cState := (*[2]uint64)(unsafe.Pointer(&state[0]))
+	cKey := (*[2]uint64)(unsafe.Pointer(&st.Key[0]))
 	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
 
-	cResult[0], cResult[1] = st.encryptLong(cA[0], cB[0]), st.encryptLong(cA[1], cB[1])
-	cA[0], cA[1] = cResult[0], cResult[1]
+	s1 := cState[0]
+	k1 := cKey[0]
 
-	cResult[0] = cA[0] ^ cB[1]
-	cResult[1] = cA[1] ^ cB[0]
+	s1 ^= bits.RotateLeft64(k1, 1)
+	s1 = bits.RotateLeft64(s1, 1)
+
+	s1 ^= bits.RotateLeft64(k1, 2)
+	s1 = bits.RotateLeft64(s1, 2)
+
+	s1 ^= bits.RotateLeft64(k1, 4)
+	s1 = bits.RotateLeft64(s1, 4)
+
+	s1 ^= bits.RotateLeft64(k1, 8)
+	s1 = bits.RotateLeft64(s1, 8)
+
+	s1 ^= bits.RotateLeft64(k1, 16)
+	s1 = bits.RotateLeft64(s1, 16)
+
+	s1 ^= bits.RotateLeft64(k1, 32)
+	s1 = bits.RotateLeft64(s1, 32)
+
+	s2 := cState[1]
+	k2 := cKey[1]
+
+	s2 ^= bits.RotateLeft64(k2, 1)
+	s2 = bits.RotateLeft64(s2, 1)
+
+	s2 ^= bits.RotateLeft64(k2, 2)
+	s2 = bits.RotateLeft64(s2, 2)
+
+	s2 ^= bits.RotateLeft64(k2, 4)
+	s2 = bits.RotateLeft64(s2, 4)
+
+	s2 ^= bits.RotateLeft64(k2, 8)
+	s2 = bits.RotateLeft64(s2, 8)
+
+	s2 ^= bits.RotateLeft64(k2, 16)
+	s2 = bits.RotateLeft64(s2, 16)
+
+	s2 ^= bits.RotateLeft64(k2, 32)
+	s2 = bits.RotateLeft64(s2, 32)
+
+	cResult[0] = st.substituteLong(s1) ^ k2
+	cResult[1] = st.substituteLong(s2) ^ k1
 
 	return result
 }
 
-// not homomorphic
 func (st *State) doDecrypt(x BitVector) BitVector {
 	state := x
 	var result BitVector
 
-	cA := (*[2]uint64)(unsafe.Pointer(&state[0]))
-	cB := (*[2]uint64)(unsafe.Pointer(&st.Key[0]))
+	cState := (*[2]uint64)(unsafe.Pointer(&state[0]))
+	cKey := (*[2]uint64)(unsafe.Pointer(&st.Key[0]))
 	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
 
-	cResult[0] = cA[0] ^ cB[1]
-	cResult[1] = cA[1] ^ cB[0]
-	cA[0], cA[1] = cResult[0], cResult[1]
-	cResult[0], cResult[1] = uint64(0), uint64(0)
+	s1 := cState[0]
+	s2 := cState[1]
+	k1 := cKey[0]
+	k2 := cKey[1]
 
-	cResult[0], cResult[1] = st.decryptLong(cA[0], cB[0]), st.decryptLong(cA[1], cB[1])
+	s1 = st.invSubstituteLong(s1 ^ k2)
+	s2 = st.invSubstituteLong(s2 ^ k1)
 
-	state = result
-	st.invPermuteSubstitute(&state)
+	s1 = bits.RotateLeft64(s1, -32)
+	s1 ^= bits.RotateLeft64(k1, 32)
 
-	return state
+	s1 = bits.RotateLeft64(s1, -16)
+	s1 ^= bits.RotateLeft64(k1, 16)
+
+	s1 = bits.RotateLeft64(s1, -8)
+	s1 ^= bits.RotateLeft64(k1, 8)
+
+	s1 = bits.RotateLeft64(s1, -4)
+	s1 ^= bits.RotateLeft64(k1, 4)
+
+	s1 = bits.RotateLeft64(s1, -2)
+	s1 ^= bits.RotateLeft64(k1, 2)
+
+	s1 = bits.RotateLeft64(s1, -1)
+	s1 ^= bits.RotateLeft64(k1, 1)
+
+	s2 = bits.RotateLeft64(s2, -32)
+	s2 ^= bits.RotateLeft64(k2, 32)
+
+	s2 = bits.RotateLeft64(s2, -16)
+	s2 ^= bits.RotateLeft64(k2, 16)
+
+	s2 = bits.RotateLeft64(s2, -8)
+	s2 ^= bits.RotateLeft64(k2, 8)
+
+	s2 = bits.RotateLeft64(s2, -4)
+	s2 ^= bits.RotateLeft64(k2, 4)
+
+	s2 = bits.RotateLeft64(s2, -2)
+	s2 ^= bits.RotateLeft64(k2, 2)
+
+	s2 = bits.RotateLeft64(s2, -1)
+	s2 ^= bits.RotateLeft64(k2, 1)
+
+	cResult[0], cResult[1] = s1, s2
+
+	st.invPermuteSubstitute(&result)
+
+	return result
 }
 
 func main() {
