@@ -20,7 +20,7 @@ type BitVector [16]byte
 type BitIndex [128]int
 
 type State struct {
-	Key  BitVector
+	Keys []BitVector
 	P    [16]int
 	invP [16]int
 	S    [256]byte
@@ -71,7 +71,19 @@ func bootstrap(key BitVector) State {
 		invS[S[i]] = byte(i)
 	}
 
-	return State{key, P, invP, S, invS}
+	keys := make([]BitVector, 1)
+	keys = append(keys, key)
+
+	shift := 1
+	for i := 0; i < 6; i++ {
+		k := key
+		cK := (*[2]uint64)(unsafe.Pointer(&k[0]))
+		cK[0], cK[1] = bits.RotateLeft64(cK[0], -i), bits.RotateLeft64(cK[1], -i)
+		keys = append(keys, k)
+		shift *= 2
+	}
+
+	return State{keys, P, invP, S, invS}
 
 }
 
@@ -147,6 +159,10 @@ func encode(payload []byte) string {
 	return buf.String()
 }
 
+func (st *State) getKey(i, j int) uint64 {
+	return (*[2]uint64)(unsafe.Pointer(&st.Keys[i]))[j]
+}
+
 func (st *State) doEncrypt(x BitVector) BitVector {
 
 	state := x
@@ -155,53 +171,50 @@ func (st *State) doEncrypt(x BitVector) BitVector {
 	var result BitVector
 
 	cState := (*[2]uint64)(unsafe.Pointer(&state[0]))
-	cKey := (*[2]uint64)(unsafe.Pointer(&st.Key[0]))
 	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
 
 	s1 := cState[0]
-	k1 := cKey[0]
 
-	s1 ^= bits.RotateLeft64(k1, 1)
+	s1 ^= st.getKey(1, 0)
 	s1 = bits.RotateLeft64(s1, 1)
 
-	s1 ^= bits.RotateLeft64(k1, 2)
+	s1 ^= st.getKey(2, 0)
 	s1 = bits.RotateLeft64(s1, 2)
 
-	s1 ^= bits.RotateLeft64(k1, 4)
+	s1 ^= st.getKey(3, 0)
 	s1 = bits.RotateLeft64(s1, 4)
 
-	s1 ^= bits.RotateLeft64(k1, 8)
+	s1 ^= st.getKey(4, 0)
 	s1 = bits.RotateLeft64(s1, 8)
 
-	s1 ^= bits.RotateLeft64(k1, 16)
+	s1 ^= st.getKey(5, 0)
 	s1 = bits.RotateLeft64(s1, 16)
 
-	s1 ^= bits.RotateLeft64(k1, 32)
+	s1 ^= st.getKey(6, 0)
 	s1 = bits.RotateLeft64(s1, 32)
 
 	s2 := cState[1]
-	k2 := cKey[1]
 
-	s2 ^= bits.RotateLeft64(k2, 1)
+	s2 ^= st.getKey(1, 1)
 	s2 = bits.RotateLeft64(s2, 1)
 
-	s2 ^= bits.RotateLeft64(k2, 2)
+	s2 ^= st.getKey(2, 1)
 	s2 = bits.RotateLeft64(s2, 2)
 
-	s2 ^= bits.RotateLeft64(k2, 4)
+	s2 ^= st.getKey(3, 1)
 	s2 = bits.RotateLeft64(s2, 4)
 
-	s2 ^= bits.RotateLeft64(k2, 8)
+	s2 ^= st.getKey(4, 1)
 	s2 = bits.RotateLeft64(s2, 8)
 
-	s2 ^= bits.RotateLeft64(k2, 16)
+	s2 ^= st.getKey(5, 1)
 	s2 = bits.RotateLeft64(s2, 16)
 
-	s2 ^= bits.RotateLeft64(k2, 32)
+	s2 ^= st.getKey(6, 1)
 	s2 = bits.RotateLeft64(s2, 32)
 
-	cResult[0] = st.substituteLong(s1) ^ k2
-	cResult[1] = st.substituteLong(s2) ^ k1
+	cResult[0] = st.substituteLong(s1) ^ st.getKey(1, 0)
+	cResult[1] = st.substituteLong(s2) ^ st.getKey(0, 0)
 
 	return result
 }
@@ -211,52 +224,49 @@ func (st *State) doDecrypt(x BitVector) BitVector {
 	var result BitVector
 
 	cState := (*[2]uint64)(unsafe.Pointer(&state[0]))
-	cKey := (*[2]uint64)(unsafe.Pointer(&st.Key[0]))
 	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
 
 	s1 := cState[0]
 	s2 := cState[1]
-	k1 := cKey[0]
-	k2 := cKey[1]
 
-	s1 = st.invSubstituteLong(s1 ^ k2)
-	s2 = st.invSubstituteLong(s2 ^ k1)
+	s1 = st.invSubstituteLong(s1 ^ st.getKey(1, 0))
+	s2 = st.invSubstituteLong(s2 ^ st.getKey(0, 0))
 
 	s1 = bits.RotateLeft64(s1, -32)
-	s1 ^= bits.RotateLeft64(k1, 32)
+	s1 ^= st.getKey(6, 0)
 
 	s1 = bits.RotateLeft64(s1, -16)
-	s1 ^= bits.RotateLeft64(k1, 16)
+	s1 ^= st.getKey(5, 0)
 
 	s1 = bits.RotateLeft64(s1, -8)
-	s1 ^= bits.RotateLeft64(k1, 8)
+	s1 ^= st.getKey(4, 0)
 
 	s1 = bits.RotateLeft64(s1, -4)
-	s1 ^= bits.RotateLeft64(k1, 4)
+	s1 ^= st.getKey(3, 0)
 
 	s1 = bits.RotateLeft64(s1, -2)
-	s1 ^= bits.RotateLeft64(k1, 2)
+	s1 ^= st.getKey(2, 0)
 
 	s1 = bits.RotateLeft64(s1, -1)
-	s1 ^= bits.RotateLeft64(k1, 1)
+	s1 ^= st.getKey(1, 0)
 
 	s2 = bits.RotateLeft64(s2, -32)
-	s2 ^= bits.RotateLeft64(k2, 32)
+	s2 ^= st.getKey(6, 1)
 
 	s2 = bits.RotateLeft64(s2, -16)
-	s2 ^= bits.RotateLeft64(k2, 16)
+	s2 ^= st.getKey(5, 1)
 
 	s2 = bits.RotateLeft64(s2, -8)
-	s2 ^= bits.RotateLeft64(k2, 8)
+	s2 ^= st.getKey(4, 1)
 
 	s2 = bits.RotateLeft64(s2, -4)
-	s2 ^= bits.RotateLeft64(k2, 4)
+	s2 ^= st.getKey(3, 1)
 
 	s2 = bits.RotateLeft64(s2, -2)
-	s2 ^= bits.RotateLeft64(k2, 2)
+	s2 ^= st.getKey(2, 1)
 
 	s2 = bits.RotateLeft64(s2, -1)
-	s2 ^= bits.RotateLeft64(k2, 1)
+	s2 ^= st.getKey(1, 1)
 
 	cResult[0], cResult[1] = s1, s2
 
