@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"math/bits"
 	"math/rand"
 	"time"
 	"unsafe"
@@ -147,119 +148,51 @@ func encode(payload []byte) string {
 }
 
 func (st *State) encryptLong(x, key uint64) uint64 {
-	maskOdd2 := uint64(0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010)
-	maskEven2 := uint64(0b01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101)
-
-	maskOdd4 := uint64(0b11001100_11001100_11001100_11001100_11001100_11001100_11001100_11001100)
-	maskEven4 := uint64(0b00110011_00110011_00110011_00110011_00110011_00110011_00110011_00110011)
-
-	maskOdd8 := uint64(0b11110000_11110000_11110000_11110000_11110000_11110000_11110000_11110000)
-	maskEven8 := uint64(0b00001111_00001111_00001111_00001111_00001111_00001111_00001111_00001111)
-
-	maskOdd16 := uint64(0b11111111_00000000_11111111_00000000_11111111_00000000_11111111_00000000)
-	maskEven16 := uint64(0b00000000_11111111_00000000_11111111_00000000_11111111_00000000_11111111)
-
-	maskOdd32 := uint64(0b11111111_11111111_00000000_00000000_11111111_11111111_00000000_00000000)
-	maskEven32 := uint64(0b00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111)
-
-	maskOdd64 := uint64(0b11111111_11111111_11111111_11111111_00000000_00000000_00000000_00000000)
-	maskEven64 := uint64(0b00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111)
-
-	result := uint64(0)
 	state := x
 
-	result |= (state ^ (key << 1)) & maskOdd2
-	result |= (state ^ (key >> 1)) & maskEven2
+	state ^= bits.RotateLeft64(key, 1)
+	state = bits.RotateLeft64(state, 1)
 
-	state = result
-	result = uint64(0)
+	state ^= bits.RotateLeft64(key, 2)
+	state = bits.RotateLeft64(state, 2)
 
-	result |= (state ^ (key << 2)) & maskOdd4
-	result |= (state ^ (key >> 2)) & maskEven4
+	state ^= bits.RotateLeft64(key, 4)
+	state = bits.RotateLeft64(state, 4)
 
-	state = result
-	result = uint64(0)
+	state ^= bits.RotateLeft64(key, 8)
+	state = bits.RotateLeft64(state, 8)
 
-	result |= (state ^ (key << 4)) & maskOdd8
-	result |= (state ^ (key >> 4)) & maskEven8
+	state ^= bits.RotateLeft64(key, 16)
+	state = bits.RotateLeft64(state, 16)
 
-	state = result
-	result = uint64(0)
+	state ^= bits.RotateLeft64(key, 32)
+	state = bits.RotateLeft64(state, 32)
 
-	result |= (state ^ (key << 8)) & maskOdd16
-	result |= (state ^ (key >> 8)) & maskEven16
-
-	state = result
-	result = uint64(0)
-
-	result |= (state ^ (key << 16)) & maskOdd32
-	result |= (state ^ (key >> 16)) & maskEven32
-
-	state = st.substituteLong(result)
-	result = uint64(0)
-
-	result |= (state ^ (key << 32)) & maskOdd64
-	result |= (state ^ (key >> 32)) & maskEven64
-
-	return result
+	return st.substituteLong(state)
 }
 
 func (st *State) decryptLong(x, key uint64) uint64 {
-	maskOdd2 := uint64(0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010)
-	maskEven2 := uint64(0b01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101)
+	state := st.invSubstituteLong(x)
 
-	maskOdd4 := uint64(0b11001100_11001100_11001100_11001100_11001100_11001100_11001100_11001100)
-	maskEven4 := uint64(0b00110011_00110011_00110011_00110011_00110011_00110011_00110011_00110011)
+	state = bits.RotateLeft64(state, -32)
+	state ^= bits.RotateLeft64(key, 32)
 
-	maskOdd8 := uint64(0b11110000_11110000_11110000_11110000_11110000_11110000_11110000_11110000)
-	maskEven8 := uint64(0b00001111_00001111_00001111_00001111_00001111_00001111_00001111_00001111)
+	state = bits.RotateLeft64(state, -16)
+	state ^= bits.RotateLeft64(key, 16)
 
-	maskOdd16 := uint64(0b11111111_00000000_11111111_00000000_11111111_00000000_11111111_00000000)
-	maskEven16 := uint64(0b00000000_11111111_00000000_11111111_00000000_11111111_00000000_11111111)
+	state = bits.RotateLeft64(state, -8)
+	state ^= bits.RotateLeft64(key, 8)
 
-	maskOdd32 := uint64(0b11111111_11111111_00000000_00000000_11111111_11111111_00000000_00000000)
-	maskEven32 := uint64(0b00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111)
+	state = bits.RotateLeft64(state, -4)
+	state ^= bits.RotateLeft64(key, 4)
 
-	maskOdd64 := uint64(0b11111111_11111111_11111111_11111111_00000000_00000000_00000000_00000000)
-	maskEven64 := uint64(0b00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111)
+	state = bits.RotateLeft64(state, -2)
+	state ^= bits.RotateLeft64(key, 2)
 
-	result := uint64(0)
-	state := x
+	state = bits.RotateLeft64(state, -1)
+	state ^= bits.RotateLeft64(key, 1)
 
-	result |= (state ^ (key << 32)) & maskOdd64
-	result |= (state ^ (key >> 32)) & maskEven64
-
-	state = st.invSubstituteLong(result)
-	result = uint64(0)
-
-	result |= (state ^ (key << 16)) & maskOdd32
-	result |= (state ^ (key >> 16)) & maskEven32
-
-	state = result
-	result = uint64(0)
-
-	result |= (state ^ (key << 8)) & maskOdd16
-	result |= (state ^ (key >> 8)) & maskEven16
-
-	state = result
-	result = uint64(0)
-
-	result |= (state ^ (key << 4)) & maskOdd8
-	result |= (state ^ (key >> 4)) & maskEven8
-
-	state = result
-	result = uint64(0)
-
-	result |= (state ^ (key << 2)) & maskOdd4
-	result |= (state ^ (key >> 2)) & maskEven4
-
-	state = result
-	result = uint64(0)
-
-	result |= (state ^ (key << 1)) & maskOdd2
-	result |= (state ^ (key >> 1)) & maskEven2
-
-	return result
+	return state
 }
 
 // not homomorphic
