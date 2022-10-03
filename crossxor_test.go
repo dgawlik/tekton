@@ -10,7 +10,7 @@ import (
 func TestEncryptDecypt(t *testing.T) {
 	key := hexToVector("a291a728727ac647a53193be9583c504")
 
-	st := State{key}
+	st := bootstrap(key)
 
 	for i := 0; i < 1_000_00; i++ {
 		A := hexToVector(randomString())
@@ -24,9 +24,9 @@ func TestEncryptDecypt(t *testing.T) {
 }
 
 func TestTimeOfEncryption(t *testing.T) {
-	key := "a291a728727ac647a53193be9583c504"
+	key := hexToVector("a291a728727ac647a53193be9583c504")
 
-	st := State{hexToVector(key)}
+	st := bootstrap(key)
 
 	var totalTime time.Duration
 	for i := 0; i < 1_000_000; i++ {
@@ -42,9 +42,9 @@ func TestTimeOfEncryption(t *testing.T) {
 }
 
 func TestTimeOfDecryption(t *testing.T) {
-	key := "a291a728727ac647a53193be9583c504"
+	key := hexToVector("a291a728727ac647a53193be9583c504")
 
-	st := State{hexToVector(key)}
+	st := bootstrap(key)
 
 	var totalTime time.Duration
 	for i := 0; i < 1_000_000; i++ {
