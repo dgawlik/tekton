@@ -171,25 +171,25 @@ func (st *State) encryptLong(x, key uint64) uint64 {
 	result |= (state ^ (key << 1)) & maskOdd2
 	result |= (state ^ (key >> 1)) & maskEven2
 
-	state = st.substituteLong(result)
+	state = result
 	result = uint64(0)
 
 	result |= (state ^ (key << 2)) & maskOdd4
 	result |= (state ^ (key >> 2)) & maskEven4
 
-	state = st.substituteLong(result)
+	state = result
 	result = uint64(0)
 
 	result |= (state ^ (key << 4)) & maskOdd8
 	result |= (state ^ (key >> 4)) & maskEven8
 
-	state = st.substituteLong(result)
+	state = result
 	result = uint64(0)
 
 	result |= (state ^ (key << 8)) & maskOdd16
 	result |= (state ^ (key >> 8)) & maskEven16
 
-	state = st.substituteLong(result)
+	state = result
 	result = uint64(0)
 
 	result |= (state ^ (key << 16)) & maskOdd32
@@ -235,25 +235,25 @@ func (st *State) decryptLong(x, key uint64) uint64 {
 	result |= (state ^ (key << 16)) & maskOdd32
 	result |= (state ^ (key >> 16)) & maskEven32
 
-	state = st.invSubstituteLong(result)
+	state = result
 	result = uint64(0)
 
 	result |= (state ^ (key << 8)) & maskOdd16
 	result |= (state ^ (key >> 8)) & maskEven16
 
-	state = st.invSubstituteLong(result)
+	state = result
 	result = uint64(0)
 
 	result |= (state ^ (key << 4)) & maskOdd8
 	result |= (state ^ (key >> 4)) & maskEven8
 
-	state = st.invSubstituteLong(result)
+	state = result
 	result = uint64(0)
 
 	result |= (state ^ (key << 2)) & maskOdd4
 	result |= (state ^ (key >> 2)) & maskEven4
 
-	state = st.invSubstituteLong(result)
+	state = result
 	result = uint64(0)
 
 	result |= (state ^ (key << 1)) & maskOdd2
