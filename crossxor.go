@@ -84,6 +84,28 @@ func (st *State) permuteSubstitute(a *BitVector) {
 	*a = result
 }
 
+func (st *State) substituteLong(a uint64) uint64 {
+	A := (*[8]byte)(unsafe.Pointer(&a))
+	var result [8]byte
+
+	for i := 0; i < 8; i++ {
+		result[i] = st.S[A[i]]
+	}
+
+	return *(*uint64)(unsafe.Pointer(&result))
+}
+
+func (st *State) invSubstituteLong(a uint64) uint64 {
+	A := (*[8]byte)(unsafe.Pointer(&a))
+	var result [8]byte
+
+	for i := 0; i < 8; i++ {
+		result[i] = st.invS[A[i]]
+	}
+
+	return *(*uint64)(unsafe.Pointer(&result))
+}
+
 func (st *State) invPermuteSubstitute(a *BitVector) {
 	var result BitVector
 
@@ -124,7 +146,7 @@ func encode(payload []byte) string {
 	return buf.String()
 }
 
-func encryptLong(x, key uint64) uint64 {
+func (st *State) encryptLong(x, key uint64) uint64 {
 	maskOdd2 := uint64(0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010)
 	maskEven2 := uint64(0b01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101)
 
@@ -149,31 +171,31 @@ func encryptLong(x, key uint64) uint64 {
 	result |= (state ^ (key << 1)) & maskOdd2
 	result |= (state ^ (key >> 1)) & maskEven2
 
-	state = result
+	state = st.substituteLong(result)
 	result = uint64(0)
 
 	result |= (state ^ (key << 2)) & maskOdd4
 	result |= (state ^ (key >> 2)) & maskEven4
 
-	state = result
+	state = st.substituteLong(result)
 	result = uint64(0)
 
 	result |= (state ^ (key << 4)) & maskOdd8
 	result |= (state ^ (key >> 4)) & maskEven8
 
-	state = result
+	state = st.substituteLong(result)
 	result = uint64(0)
 
 	result |= (state ^ (key << 8)) & maskOdd16
 	result |= (state ^ (key >> 8)) & maskEven16
 
-	state = result
+	state = st.substituteLong(result)
 	result = uint64(0)
 
 	result |= (state ^ (key << 16)) & maskOdd32
 	result |= (state ^ (key >> 16)) & maskEven32
 
-	state = result
+	state = st.substituteLong(result)
 	result = uint64(0)
 
 	result |= (state ^ (key << 32)) & maskOdd64
@@ -182,7 +204,7 @@ func encryptLong(x, key uint64) uint64 {
 	return result
 }
 
-func decryptLong(x, key uint64) uint64 {
+func (st *State) decryptLong(x, key uint64) uint64 {
 	maskOdd2 := uint64(0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010)
 	maskEven2 := uint64(0b01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101)
 
@@ -207,31 +229,31 @@ func decryptLong(x, key uint64) uint64 {
 	result |= (state ^ (key << 32)) & maskOdd64
 	result |= (state ^ (key >> 32)) & maskEven64
 
-	state = result
+	state = st.invSubstituteLong(result)
 	result = uint64(0)
 
 	result |= (state ^ (key << 16)) & maskOdd32
 	result |= (state ^ (key >> 16)) & maskEven32
 
-	state = result
+	state = st.invSubstituteLong(result)
 	result = uint64(0)
 
 	result |= (state ^ (key << 8)) & maskOdd16
 	result |= (state ^ (key >> 8)) & maskEven16
 
-	state = result
+	state = st.invSubstituteLong(result)
 	result = uint64(0)
 
 	result |= (state ^ (key << 4)) & maskOdd8
 	result |= (state ^ (key >> 4)) & maskEven8
 
-	state = result
+	state = st.invSubstituteLong(result)
 	result = uint64(0)
 
 	result |= (state ^ (key << 2)) & maskOdd4
 	result |= (state ^ (key >> 2)) & maskEven4
 
-	state = result
+	state = st.invSubstituteLong(result)
 	result = uint64(0)
 
 	result |= (state ^ (key << 1)) & maskOdd2
@@ -252,7 +274,7 @@ func (st *State) doEncrypt(x BitVector) BitVector {
 	cB := (*[2]uint64)(unsafe.Pointer(&st.Key[0]))
 	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
 
-	cResult[0], cResult[1] = encryptLong(cA[0], cB[0]), encryptLong(cA[1], cB[1])
+	cResult[0], cResult[1] = st.encryptLong(cA[0], cB[0]), st.encryptLong(cA[1], cB[1])
 	cA[0], cA[1] = cResult[0], cResult[1]
 
 	cResult[0] = cA[0] ^ cB[1]
@@ -275,7 +297,7 @@ func (st *State) doDecrypt(x BitVector) BitVector {
 	cA[0], cA[1] = cResult[0], cResult[1]
 	cResult[0], cResult[1] = uint64(0), uint64(0)
 
-	cResult[0], cResult[1] = decryptLong(cA[0], cB[0]), decryptLong(cA[1], cB[1])
+	cResult[0], cResult[1] = st.decryptLong(cA[0], cB[0]), st.decryptLong(cA[1], cB[1])
 
 	state = result
 	st.invPermuteSubstitute(&state)
