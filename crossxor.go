@@ -187,10 +187,8 @@ func (st *State) doEncrypt(x BitVector) BitVector {
 	state := x
 	st.permuteSubstitute(&state)
 
-	var result BitVector
-
-	cState := (*[2]uint64)(unsafe.Pointer(&state[0]))
-	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
+	cState := *(*[2]uint64)(unsafe.Pointer(&state[0]))
+	var cResult [2]uint64
 
 	s1 := cState[0]
 
@@ -225,15 +223,14 @@ func (st *State) doEncrypt(x BitVector) BitVector {
 	cResult[0] = st.substituteLong(s1) ^ st.getKey(1, 0)
 	cResult[1] = st.substituteLong(s2) ^ st.getKey(0, 0)
 
-	return result
+	return *(*BitVector)(unsafe.Pointer(&cResult))
 }
 
 func (st *State) doDecrypt(x BitVector) BitVector {
 	state := x
-	var result BitVector
 
-	cState := (*[2]uint64)(unsafe.Pointer(&state[0]))
-	cResult := (*[2]uint64)(unsafe.Pointer(&result[0]))
+	cState := *(*[2]uint64)(unsafe.Pointer(&state[0]))
+	var cResult [2]uint64
 
 	s1 := cState[0]
 	s2 := cState[1]
@@ -268,6 +265,8 @@ func (st *State) doDecrypt(x BitVector) BitVector {
 	s2 = diffusion(s2)
 
 	cResult[0], cResult[1] = s1, s2
+
+	result := *(*BitVector)(unsafe.Pointer(&cResult))
 
 	st.invPermuteSubstitute(&result)
 
