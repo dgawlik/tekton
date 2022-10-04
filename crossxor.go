@@ -165,12 +165,24 @@ func (st *State) getKey(i, j int) uint64 {
 
 func diffusion(x uint64) uint64 {
 
-	x ^= bits.RotateLeft64(x, -1) & uint64(0b_01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101)
-	x ^= bits.RotateLeft64(x, -2) & uint64(0b_00110011_00110011_00110011_00110011_00110011_00110011_00110011_00110011)
-	x ^= bits.RotateLeft64(x, -4) & uint64(0b_00001111_00001111_00001111_00001111_00001111_00001111_00001111_00001111)
-	x ^= bits.RotateLeft64(x, -8) & uint64(0b_00000000_11111111_00000000_11111111_00000000_11111111_00000000_11111111)
-	x ^= bits.RotateLeft64(x, -16) & uint64(0b_00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111)
-	x ^= bits.RotateLeft64(x, -32) & uint64(0b_00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111)
+	x ^= bits.RotateLeft64(x&uint64(0b_01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101), 1)
+	x ^= bits.RotateLeft64(x&uint64(0b_00110011_00110011_00110011_00110011_00110011_00110011_00110011_00110011), 2)
+	x ^= bits.RotateLeft64(x&uint64(0b_00001111_00001111_00001111_00001111_00001111_00001111_00001111_00001111), 4)
+	x ^= bits.RotateLeft64(x&uint64(0b_00000000_11111111_00000000_11111111_00000000_11111111_00000000_11111111), 8)
+	x ^= bits.RotateLeft64(x&uint64(0b_00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111), 16)
+	x ^= bits.RotateLeft64(x&uint64(0b_00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111), 32)
+
+	return x
+}
+
+func reverseDiffusion(x uint64) uint64 {
+
+	x ^= bits.RotateLeft64(x&uint64(0b_01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101), 1)
+	x ^= bits.RotateLeft64(x&uint64(0b_00110011_00110011_00110011_00110011_00110011_00110011_00110011_00110011), 2)
+	x ^= bits.RotateLeft64(x&uint64(0b_00001111_00001111_00001111_00001111_00001111_00001111_00001111_00001111), 4)
+	x ^= bits.RotateLeft64(x&uint64(0b_00000000_11111111_00000000_11111111_00000000_11111111_00000000_11111111), 8)
+	x ^= bits.RotateLeft64(x&uint64(0b_00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111), 16)
+	x ^= bits.RotateLeft64(x&uint64(0b_00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111), 32)
 
 	return x
 }
@@ -235,30 +247,30 @@ func (st *State) doDecrypt(x BitVector) BitVector {
 	s2 = st.invSubstituteLong(s2 ^ st.getKey(0, 0))
 
 	s1 ^= st.getKey(6, 0)
-	s1 = diffusion(s1)
+	s1 = reverseDiffusion(s1)
 	s1 ^= st.getKey(5, 0)
-	s1 = diffusion(s1)
+	s1 = reverseDiffusion(s1)
 	s1 ^= st.getKey(4, 0)
-	s1 = diffusion(s1)
+	s1 = reverseDiffusion(s1)
 	s1 ^= st.getKey(3, 0)
-	s1 = diffusion(s1)
+	s1 = reverseDiffusion(s1)
 	s1 ^= st.getKey(2, 0)
-	s1 = diffusion(s1)
+	s1 = reverseDiffusion(s1)
 	s1 ^= st.getKey(1, 0)
-	s1 = diffusion(s1)
+	s1 = reverseDiffusion(s1)
 
 	s2 ^= st.getKey(6, 1)
-	s2 = diffusion(s2)
+	s2 = reverseDiffusion(s2)
 	s2 ^= st.getKey(5, 1)
-	s2 = diffusion(s2)
+	s2 = reverseDiffusion(s2)
 	s2 ^= st.getKey(4, 1)
-	s2 = diffusion(s2)
+	s2 = reverseDiffusion(s2)
 	s2 ^= st.getKey(3, 1)
-	s2 = diffusion(s2)
+	s2 = reverseDiffusion(s2)
 	s2 ^= st.getKey(2, 1)
-	s2 = diffusion(s2)
+	s2 = reverseDiffusion(s2)
 	s2 ^= st.getKey(1, 1)
-	s2 = diffusion(s2)
+	s2 = reverseDiffusion(s2)
 
 	cResult[0], cResult[1] = s1, s2
 
