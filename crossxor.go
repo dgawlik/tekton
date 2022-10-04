@@ -163,6 +163,18 @@ func (st *State) getKey(i, j int) uint64 {
 	return (*[2]uint64)(unsafe.Pointer(&st.Keys[i]))[j]
 }
 
+func diffusion(x uint64) uint64 {
+
+	x ^= bits.RotateLeft64(x, -1) & uint64(0b_01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101)
+	x ^= bits.RotateLeft64(x, -2) & uint64(0b_00110011_00110011_00110011_00110011_00110011_00110011_00110011_00110011)
+	x ^= bits.RotateLeft64(x, -4) & uint64(0b_00001111_00001111_00001111_00001111_00001111_00001111_00001111_00001111)
+	x ^= bits.RotateLeft64(x, -8) & uint64(0b_00000000_11111111_00000000_11111111_00000000_11111111_00000000_11111111)
+	x ^= bits.RotateLeft64(x, -16) & uint64(0b_00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111)
+	x ^= bits.RotateLeft64(x, -32) & uint64(0b_00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111)
+
+	return x
+}
+
 func (st *State) doEncrypt(x BitVector) BitVector {
 
 	state := x
@@ -175,43 +187,33 @@ func (st *State) doEncrypt(x BitVector) BitVector {
 
 	s1 := cState[0]
 
+	s1 = diffusion(s1)
 	s1 ^= st.getKey(1, 0)
-	s1 = bits.RotateLeft64(s1, 1)
-
+	s1 = diffusion(s1)
 	s1 ^= st.getKey(2, 0)
-	s1 = bits.RotateLeft64(s1, 2)
-
+	s1 = diffusion(s1)
 	s1 ^= st.getKey(3, 0)
-	s1 = bits.RotateLeft64(s1, 4)
-
+	s1 = diffusion(s1)
 	s1 ^= st.getKey(4, 0)
-	s1 = bits.RotateLeft64(s1, 8)
-
+	s1 = diffusion(s1)
 	s1 ^= st.getKey(5, 0)
-	s1 = bits.RotateLeft64(s1, 16)
-
+	s1 = diffusion(s1)
 	s1 ^= st.getKey(6, 0)
-	s1 = bits.RotateLeft64(s1, 32)
 
 	s2 := cState[1]
 
+	s2 = diffusion(s2)
 	s2 ^= st.getKey(1, 1)
-	s2 = bits.RotateLeft64(s2, 1)
-
+	s2 = diffusion(s2)
 	s2 ^= st.getKey(2, 1)
-	s2 = bits.RotateLeft64(s2, 2)
-
+	s2 = diffusion(s2)
 	s2 ^= st.getKey(3, 1)
-	s2 = bits.RotateLeft64(s2, 4)
-
+	s2 = diffusion(s2)
 	s2 ^= st.getKey(4, 1)
-	s2 = bits.RotateLeft64(s2, 8)
-
+	s2 = diffusion(s2)
 	s2 ^= st.getKey(5, 1)
-	s2 = bits.RotateLeft64(s2, 16)
-
+	s2 = diffusion(s2)
 	s2 ^= st.getKey(6, 1)
-	s2 = bits.RotateLeft64(s2, 32)
 
 	cResult[0] = st.substituteLong(s1) ^ st.getKey(1, 0)
 	cResult[1] = st.substituteLong(s2) ^ st.getKey(0, 0)
@@ -232,41 +234,31 @@ func (st *State) doDecrypt(x BitVector) BitVector {
 	s1 = st.invSubstituteLong(s1 ^ st.getKey(1, 0))
 	s2 = st.invSubstituteLong(s2 ^ st.getKey(0, 0))
 
-	s1 = bits.RotateLeft64(s1, -32)
 	s1 ^= st.getKey(6, 0)
-
-	s1 = bits.RotateLeft64(s1, -16)
+	s1 = diffusion(s1)
 	s1 ^= st.getKey(5, 0)
-
-	s1 = bits.RotateLeft64(s1, -8)
+	s1 = diffusion(s1)
 	s1 ^= st.getKey(4, 0)
-
-	s1 = bits.RotateLeft64(s1, -4)
+	s1 = diffusion(s1)
 	s1 ^= st.getKey(3, 0)
-
-	s1 = bits.RotateLeft64(s1, -2)
+	s1 = diffusion(s1)
 	s1 ^= st.getKey(2, 0)
-
-	s1 = bits.RotateLeft64(s1, -1)
+	s1 = diffusion(s1)
 	s1 ^= st.getKey(1, 0)
+	s1 = diffusion(s1)
 
-	s2 = bits.RotateLeft64(s2, -32)
 	s2 ^= st.getKey(6, 1)
-
-	s2 = bits.RotateLeft64(s2, -16)
+	s2 = diffusion(s2)
 	s2 ^= st.getKey(5, 1)
-
-	s2 = bits.RotateLeft64(s2, -8)
+	s2 = diffusion(s2)
 	s2 ^= st.getKey(4, 1)
-
-	s2 = bits.RotateLeft64(s2, -4)
+	s2 = diffusion(s2)
 	s2 ^= st.getKey(3, 1)
-
-	s2 = bits.RotateLeft64(s2, -2)
+	s2 = diffusion(s2)
 	s2 ^= st.getKey(2, 1)
-
-	s2 = bits.RotateLeft64(s2, -1)
+	s2 = diffusion(s2)
 	s2 ^= st.getKey(1, 1)
+	s2 = diffusion(s2)
 
 	cResult[0], cResult[1] = s1, s2
 
@@ -282,7 +274,13 @@ func main() {
 	if *generate {
 		fmt.Println(randomString())
 	} else if *encrypt != "" && *key != "" {
+		k := hexToVector(*key)
+		t := hexToVector(*encrypt)
 
+		st := bootstrap(k)
+
+		c := st.doEncrypt(t)
+		fmt.Println(encode(c[:]))
 	} else if *decrypt != "" && *key != "" {
 
 	} else {
