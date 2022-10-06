@@ -25,6 +25,15 @@ func TestEncryptDecypt(t *testing.T) {
 	}
 }
 
+func TestConversion(t *testing.T) {
+	var a BitVector
+	a[0] = byte(2)
+
+	if !reflect.DeepEqual(a, bitVectorFromUint64(uint64FromBitVector(&a))) {
+		t.Fail()
+	}
+}
+
 func TestTimeOfEncryption(t *testing.T) {
 	key := hexToVector("a291a728727ac647a53193be9583c504")
 

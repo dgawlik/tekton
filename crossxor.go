@@ -159,118 +159,182 @@ func encode(payload []byte) string {
 	return buf.String()
 }
 
-func (st *State) getKey(i, j int) uint64 {
-	return (*[2]uint64)(unsafe.Pointer(&st.Keys[i]))[j]
+func uint64FromBitVector(x *BitVector) [2]uint64 {
+	var result [2]uint64
+
+	result[1] |= uint64(x[15])
+	result[1] <<= 8
+
+	result[1] |= uint64(x[14])
+	result[1] <<= 8
+
+	result[1] |= uint64(x[13])
+	result[1] <<= 8
+
+	result[1] |= uint64(x[12])
+	result[1] <<= 8
+
+	result[1] |= uint64(x[11])
+	result[1] <<= 8
+
+	result[1] |= uint64(x[10])
+	result[1] <<= 8
+
+	result[1] |= uint64(x[9])
+	result[1] <<= 8
+
+	result[1] |= uint64(x[8])
+
+	result[0] |= uint64(x[7])
+	result[0] <<= 8
+
+	result[0] |= uint64(x[6])
+	result[0] <<= 8
+
+	result[0] |= uint64(x[5])
+	result[0] <<= 8
+
+	result[0] |= uint64(x[4])
+	result[0] <<= 8
+
+	result[0] |= uint64(x[3])
+	result[0] <<= 8
+
+	result[0] |= uint64(x[2])
+	result[0] <<= 8
+
+	result[0] |= uint64(x[1])
+	result[0] <<= 8
+
+	result[0] |= uint64(x[0])
+
+	return result
 }
 
-func diffusion(x uint64) uint64 {
+func bitVectorFromUint64(x [2]uint64) BitVector {
+	var result BitVector
 
-	p1 := (x ^ bits.RotateLeft64(x&uint64(0b_01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101), 1)) & uint64(0b_10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010)
-	p2 := (x ^ bits.RotateLeft64(x&uint64(0b_00110011_00110011_00110011_00110011_00110011_00110011_00110011_00110011), 2)) & uint64(0b_11001100_11001100_11001100_11001100_11001100_11001100_11001100_11001100)
-	p3 := (x ^ bits.RotateLeft64(x&uint64(0b_00001111_00001111_00001111_00001111_00001111_00001111_00001111_00001111), 4)) & uint64(0b_11110000_11110000_11110000_11110000_11110000_11110000_11110000_11110000)
-	p4 := (x ^ bits.RotateLeft64(x&uint64(0b_00000000_11111111_00000000_11111111_00000000_11111111_00000000_11111111), 8)) & uint64(0b_11111111_00000000_11111111_00000000_11111111_00000000_11111111_00000000)
-	p5 := (x ^ bits.RotateLeft64(x&uint64(0b_00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111), 16)) & uint64(0b_11111111_11111111_00000000_00000000_11111111_11111111_00000000_00000000)
-	p6 := (x ^ bits.RotateLeft64(x&uint64(0b_00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111), 32)) & uint64(0b_11111111_11111111_11111111_11111111_00000000_00000000_00000000_00000000)
+	result[0] = byte(x[0] & 255)
+	x[0] >>= 8
 
-	p7 := (x ^ bits.RotateLeft64(x&uint64(0b_10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010), -1)) & uint64(0b_01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101)
-	p8 := (x ^ bits.RotateLeft64(x&uint64(0b_11001100_11001100_11001100_11001100_11001100_11001100_11001100_11001100), -2)) & uint64(0b_00110011_00110011_00110011_00110011_00110011_00110011_00110011_00110011)
-	p9 := (x ^ bits.RotateLeft64(x&uint64(0b_11110000_11110000_11110000_11110000_11110000_11110000_11110000_11110000), -4)) & uint64(0b_00001111_00001111_00001111_00001111_00001111_00001111_00001111_00001111)
-	p10 := (x ^ bits.RotateLeft64(x&uint64(0b_11111111_00000000_11111111_00000000_11111111_00000000_11111111_00000000), -8)) & uint64(0b_00000000_11111111_00000000_11111111_00000000_11111111_00000000_11111111)
-	p11 := (x ^ bits.RotateLeft64(x&uint64(0b_11111111_11111111_00000000_00000000_11111111_11111111_00000000_00000000), -16)) & uint64(0b_00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111)
-	p12 := (x ^ bits.RotateLeft64(x&uint64(0b_11111111_11111111_11111111_11111111_00000000_00000000_00000000_00000000), -32)) & uint64(0b_00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111)
+	result[1] = byte(x[0] & 255)
+	x[0] >>= 8
+
+	result[2] = byte(x[0] & 255)
+	x[0] >>= 8
+
+	result[3] = byte(x[0] & 255)
+	x[0] >>= 8
+
+	result[4] = byte(x[0] & 255)
+	x[0] >>= 8
+
+	result[5] = byte(x[0] & 255)
+	x[0] >>= 8
+
+	result[6] = byte(x[0] & 255)
+	x[0] >>= 8
+
+	result[7] = byte(x[0] & 255)
+
+	result[8] = byte(x[1] & 255)
+	x[1] >>= 8
+
+	result[9] = byte(x[1] & 255)
+	x[1] >>= 8
+
+	result[10] = byte(x[1] & 255)
+	x[1] >>= 8
+
+	result[11] = byte(x[1] & 255)
+	x[1] >>= 8
+
+	result[12] = byte(x[1] & 255)
+	x[1] >>= 8
+
+	result[13] = byte(x[1] & 255)
+	x[1] >>= 8
+
+	result[14] = byte(x[1] & 255)
+	x[1] >>= 8
+
+	result[15] = byte(x[1] & 255)
+
+	return result
+}
+
+func diffusionUint64(x uint64) uint64 {
+
+	p1 := (x ^ ((x & uint64(0b_01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101)) << 1)) & uint64(0b_10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010)
+	p2 := (x ^ ((x & uint64(0b_00110011_00110011_00110011_00110011_00110011_00110011_00110011_00110011)) << 2)) & uint64(0b_11001100_11001100_11001100_11001100_11001100_11001100_11001100_11001100)
+	p3 := (x ^ ((x & uint64(0b_00001111_00001111_00001111_00001111_00001111_00001111_00001111_00001111)) << 4)) & uint64(0b_11110000_11110000_11110000_11110000_11110000_11110000_11110000_11110000)
+	p4 := (x ^ ((x & uint64(0b_00000000_11111111_00000000_11111111_00000000_11111111_00000000_11111111)) << 8)) & uint64(0b_11111111_00000000_11111111_00000000_11111111_00000000_11111111_00000000)
+	p5 := (x ^ ((x & uint64(0b_00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111)) << 16)) & uint64(0b_11111111_11111111_00000000_00000000_11111111_11111111_00000000_00000000)
+	p6 := (x ^ ((x & uint64(0b_00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111)) << 32)) & uint64(0b_11111111_11111111_11111111_11111111_00000000_00000000_00000000_00000000)
+
+	p7 := (x ^ ((x & uint64(0b_10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010)) >> 1)) & uint64(0b_01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101)
+	p8 := (x ^ ((x & uint64(0b_11001100_11001100_11001100_11001100_11001100_11001100_11001100_11001100)) >> 2)) & uint64(0b_00110011_00110011_00110011_00110011_00110011_00110011_00110011_00110011)
+	p9 := (x ^ ((x & uint64(0b_11110000_11110000_11110000_11110000_11110000_11110000_11110000_11110000)) >> 4)) & uint64(0b_00001111_00001111_00001111_00001111_00001111_00001111_00001111_00001111)
+	p10 := (x ^ ((x & uint64(0b_11111111_00000000_11111111_00000000_11111111_00000000_11111111_00000000)) >> 8)) & uint64(0b_00000000_11111111_00000000_11111111_00000000_11111111_00000000_11111111)
+	p11 := (x ^ ((x & uint64(0b_11111111_11111111_00000000_00000000_11111111_11111111_00000000_00000000)) >> 16)) & uint64(0b_00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111)
+	p12 := (x ^ ((x & uint64(0b_11111111_11111111_11111111_11111111_00000000_00000000_00000000_00000000)) >> 32)) & uint64(0b_00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111)
 
 	return x ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6 ^ p7 ^ p8 ^ p9 ^ p10 ^ p11 ^ p12
+}
+
+func diffusion(x *BitVector) BitVector {
+	convX := uint64FromBitVector(x)
+	convX[0] = diffusionUint64(convX[0])
+	convX[1] = diffusionUint64(convX[1])
+	return bitVectorFromUint64(convX)
+}
+
+func (x *BitVector) xor(y BitVector) BitVector {
+	var result BitVector
+
+	for i := 0; i < 16; i++ {
+		result[i] = x[i] ^ y[i]
+	}
+
+	return result
 }
 
 func (st *State) doEncrypt(x BitVector) BitVector {
 
 	state := x
+
 	st.permuteSubstitute(&state)
+	state = diffusion(&state)
+	state = state.xor(st.Keys[1])
 
-	cState := *(*[2]uint64)(unsafe.Pointer(&state[0]))
-	var cResult [2]uint64
+	st.permuteSubstitute(&state)
+	state = diffusion(&state)
+	state = state.xor(st.Keys[2])
 
-	s1 := cState[0]
+	st.permuteSubstitute(&state)
+	state = diffusion(&state)
+	state = state.xor(st.Keys[3])
 
-	s1 = diffusion(s1)
-	s1 ^= st.getKey(1, 0)
-	s1 = diffusion(s1)
-	s1 ^= st.getKey(2, 0)
-	s1 = diffusion(s1)
-	s1 ^= st.getKey(3, 0)
-	s1 = diffusion(s1)
-	s1 ^= st.getKey(4, 0)
-	s1 = diffusion(s1)
-	s1 ^= st.getKey(5, 0)
-	s1 = diffusion(s1)
-	s1 ^= st.getKey(6, 0)
+	return state
 
-	s2 := cState[1]
-
-	s2 = diffusion(s2)
-	s2 ^= st.getKey(1, 1)
-	s2 = diffusion(s2)
-	s2 ^= st.getKey(2, 1)
-	s2 = diffusion(s2)
-	s2 ^= st.getKey(3, 1)
-	s2 = diffusion(s2)
-	s2 ^= st.getKey(4, 1)
-	s2 = diffusion(s2)
-	s2 ^= st.getKey(5, 1)
-	s2 = diffusion(s2)
-	s2 ^= st.getKey(6, 1)
-
-	cResult[0] = st.substituteLong(s1) ^ st.getKey(1, 0)
-	cResult[1] = st.substituteLong(s2) ^ st.getKey(0, 0)
-
-	return *(*BitVector)(unsafe.Pointer(&cResult))
 }
 
 func (st *State) doDecrypt(x BitVector) BitVector {
 	state := x
 
-	cState := *(*[2]uint64)(unsafe.Pointer(&state[0]))
-	var cResult [2]uint64
+	state = state.xor(st.Keys[3])
+	state = diffusion(&state)
+	st.invPermuteSubstitute(&state)
 
-	s1 := cState[0]
-	s2 := cState[1]
+	state = state.xor(st.Keys[2])
+	state = diffusion(&state)
+	st.invPermuteSubstitute(&state)
 
-	s1 = st.invSubstituteLong(s1 ^ st.getKey(1, 0))
-	s2 = st.invSubstituteLong(s2 ^ st.getKey(0, 0))
+	state = state.xor(st.Keys[1])
+	state = diffusion(&state)
+	st.invPermuteSubstitute(&state)
 
-	s1 ^= st.getKey(6, 0)
-	s1 = diffusion(s1)
-	s1 ^= st.getKey(5, 0)
-	s1 = diffusion(s1)
-	s1 ^= st.getKey(4, 0)
-	s1 = diffusion(s1)
-	s1 ^= st.getKey(3, 0)
-	s1 = diffusion(s1)
-	s1 ^= st.getKey(2, 0)
-	s1 = diffusion(s1)
-	s1 ^= st.getKey(1, 0)
-	s1 = diffusion(s1)
-
-	s2 ^= st.getKey(6, 1)
-	s2 = diffusion(s2)
-	s2 ^= st.getKey(5, 1)
-	s2 = diffusion(s2)
-	s2 ^= st.getKey(4, 1)
-	s2 = diffusion(s2)
-	s2 ^= st.getKey(3, 1)
-	s2 = diffusion(s2)
-	s2 ^= st.getKey(2, 1)
-	s2 = diffusion(s2)
-	s2 ^= st.getKey(1, 1)
-	s2 = diffusion(s2)
-
-	cResult[0], cResult[1] = s1, s2
-
-	result := *(*BitVector)(unsafe.Pointer(&cResult))
-
-	st.invPermuteSubstitute(&result)
-
-	return result
+	return state
 }
 
 func main() {
