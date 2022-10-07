@@ -14,7 +14,7 @@ g++ -static -std=c++20 -O3 -mavx2 \
      -o tekton\
     tekton.cxx
 
-g++ -static -std=c++20 -O3 -mavx2 \
+g++ -static -std=c++20 -O3 -mavx2 -maes \
      -o benchmarks\
      -Ideps/AES/src\
     tekton_benchmarks.cxx deps/AES/src/AES.cpp

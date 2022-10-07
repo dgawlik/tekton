@@ -1,9 +1,11 @@
 
 #include <vector>
 #include <cstdlib>
+#include <immintrin.h>
 
 typedef __uint128_t uint128;
 typedef u_int8_t byte;
+
 
 inline uint128 toUint128(byte* bytes){
     return *((uint128*)bytes);
@@ -92,15 +94,15 @@ class Tekton {
 
         state ^= keys[0];
 
-        state = diffusion(state);
+        state = diffusionOptimized(state);
         state = permuteSubstitute(state);
         state ^= keys[1];
 
-        state = diffusion(state);
+        state = diffusionOptimized(state);
         state = permuteSubstitute(state);
         state ^= keys[2];
 
-        state = diffusion(state);
+        state = diffusionOptimized(state);
         state = permuteSubstitute(state);
         state ^= keys[3];
 
@@ -112,15 +114,15 @@ class Tekton {
 
         state ^= keys[3];
         state = invPermuteSubstitute(state);
-        state = diffusion(state);
+        state = diffusionOptimized(state);
 
         state ^= keys[2];
         state = invPermuteSubstitute(state);
-        state = diffusion(state);
+        state = diffusionOptimized(state);
 
         state ^= keys[1];
         state = invPermuteSubstitute(state);
-        state = diffusion(state);
+        state = diffusionOptimized(state);
 
         state ^= keys[0];
 
@@ -144,6 +146,85 @@ class Tekton {
         uint128 p12 = (x & mask6b) >> 32;
        
         return x ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6 ^ p7 ^ p8 ^p9 ^ p10 ^ p11 ^ p12;
+    }
+
+
+    uint128 diffusionOptimized(uint128& x){
+        __m128i vx = _mm_loadu_si128((const __m128i_u *) &x);
+
+
+        __m128i vtmp;
+        __m128i vmask;
+
+        vmask = _mm_loadu_si128((const __m128i_u *) &mask1a);
+        vtmp = _mm_and_si128(vmask, vx);
+        __m128i vp1 = _mm_slli_epi64(vtmp, 1);
+
+        vmask = _mm_loadu_si128((const __m128i_u *) &mask2a);
+        vtmp = _mm_and_si128(vmask, vx);
+        __m128i vp2 = _mm_slli_epi64(vtmp, 2);
+
+        vmask = _mm_loadu_si128((const __m128i_u *) &mask3a);
+        vtmp = _mm_and_si128(vmask, vx);
+        __m128i vp3 = _mm_slli_epi64(vtmp, 4);
+
+        vmask = _mm_loadu_si128((const __m128i_u *) &mask4a);
+        vtmp = _mm_and_si128(vmask, vx);
+        __m128i vp4 = _mm_bslli_si128(vtmp, 1);
+
+        vmask = _mm_loadu_si128((const __m128i_u *) &mask5a);
+        vtmp = _mm_and_si128(vmask, vx);
+        __m128i vp5 = _mm_bslli_si128(vtmp, 2);
+
+        vmask = _mm_loadu_si128((const __m128i_u *) &mask6a);
+        vtmp = _mm_and_si128(vmask, vx);
+        __m128i vp6 = _mm_bslli_si128(vtmp, 4);
+
+
+         vmask = _mm_loadu_si128((const __m128i_u *) &mask1b);
+        vtmp = _mm_and_si128(vmask, vx);
+        __m128i vp7 = _mm_srli_epi64(vtmp, 1);
+
+         vmask = _mm_loadu_si128((const __m128i_u *) &mask2b);
+        vtmp = _mm_and_si128(vmask, vx);
+        __m128i vp8 = _mm_srli_epi64(vtmp, 2);
+
+        vmask = _mm_loadu_si128((const __m128i_u *) &mask3b);
+        vtmp = _mm_and_si128(vmask, vx);
+        __m128i vp9 = _mm_srli_epi64(vtmp, 4);
+
+        vmask = _mm_loadu_si128((const __m128i_u *) &mask4b);
+        vtmp = _mm_and_si128(vmask, vx);
+        __m128i vp10 = _mm_bsrli_si128(vtmp, 1);
+
+        vmask = _mm_loadu_si128((const __m128i_u *) &mask5b);
+        vtmp = _mm_and_si128(vmask, vx);
+        __m128i vp11 = _mm_bsrli_si128(vtmp, 2);
+
+        vmask = _mm_loadu_si128((const __m128i_u *) &mask6b);
+        vtmp = _mm_and_si128(vmask, vx);
+        __m128i vp12 = _mm_bsrli_si128(vtmp, 4);
+        
+
+        __m128i vp13 = _mm_xor_si128(vp1, vp2);
+        __m128i vp14 = _mm_xor_si128(vp3, vp4);
+        __m128i vp15 = _mm_xor_si128(vp5, vp6);
+        __m128i vp16 = _mm_xor_si128(vp7, vp8);
+        __m128i vp17 = _mm_xor_si128(vp9, vp10);
+        __m128i vp18 = _mm_xor_si128(vp11, vp12);
+
+        __m128i vp19 = _mm_xor_si128(vp13, vp14);
+        __m128i vp20 = _mm_xor_si128(vp15, vp16);
+        __m128i vp21 = _mm_xor_si128(vp17, vp18);
+
+        __m128i vp22 = _mm_xor_si128(vp19, vp20);
+        vx = _mm_xor_si128(vx, vp21);
+        vx = _mm_xor_si128(vx, vp22);
+
+        uint128 result;
+        _mm_storeu_si128((__m128i_u*)&result, vx);
+       
+        return result;
     }
 
     uint128 permuteSubstitute(uint128& x){
