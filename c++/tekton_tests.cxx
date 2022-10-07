@@ -14,8 +14,10 @@ TEST(Tekton, TestDiffusion){
   uint128 num = 1;
 
   Tekton tek(toBytes(1));
-       
-  ASSERT_EQ(num, tek.diffusion(tek.diffusion(num)));
+  
+  auto step = tek.diffusion(num);
+
+  ASSERT_EQ(num, tek.diffusion(step));
 }
 
 

@@ -5,21 +5,22 @@
 typedef __uint128_t uint128;
 typedef u_int8_t byte;
 
-uint128 toUint128(byte* bytes){
+inline uint128 toUint128(byte* bytes){
     return *((uint128*)bytes);
 }
 
-uint128 intToUint128(unsigned int ints[4]){
+inline uint128 intToUint128(unsigned int ints[4]){
     return *((uint128*)ints);
 }
 
-byte* toBytes(uint128 num){
+inline byte* toBytes(uint128 num){
     byte* result = new byte[16];
     uint128* view = (uint128*) &result[0];
     *view = num;
 
     return result;
 }
+
 
 class Tekton {
     public:
@@ -127,7 +128,7 @@ class Tekton {
     }
 
 
-    uint128 diffusion(uint128 x){
+    uint128 diffusion(uint128& x){
         uint128 p1 = (x & mask1a) << 1;
         uint128 p2 = (x & mask2a) << 2;
         uint128 p3 = (x & mask3a) << 4;
@@ -145,26 +146,28 @@ class Tekton {
         return x ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6 ^ p7 ^ p8 ^p9 ^ p10 ^ p11 ^ p12;
     }
 
-    uint128 permuteSubstitute(uint128 x){
-        byte* src = toBytes(x);
-        byte* dest = new byte[16];
+    uint128 permuteSubstitute(uint128& x){
+        byte* src = (byte*) &x;
+        uint128 dest;
+        byte* destView = (byte*) &dest;
 
         for(int i=0;i<16;i++){
-            dest[P[i]] = S[(unsigned char)src[i]];
+            destView[P[i]] = S[(unsigned char)src[i]];
         }
 
-        return toUint128(dest);
+        return dest;
     }
 
-    uint128 invPermuteSubstitute(uint128 x){
-        byte* src = toBytes(x);
-        byte* dest = new byte[16];
+    uint128 invPermuteSubstitute(uint128& x){
+        byte* src = (byte*) &x;
+        uint128 dest;
+        byte* destView = (byte*) &dest;
 
         for(int i=0;i<16;i++){
-            dest[invP[i]] = invS[(unsigned char) src[i]];
+            destView[invP[i]] = invS[(unsigned char) src[i]];
         }
 
-        return toUint128(dest);
+        return dest;
     }
 
     private:
