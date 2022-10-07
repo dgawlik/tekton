@@ -152,7 +152,7 @@ class Tekton {
         byte* destView = (byte*) &dest;
 
         for(int i=0;i<16;i++){
-            destView[P[i]] = S[(unsigned char)src[i]];
+            destView[P[i]] = S[src[i]];
         }
 
         return dest;
@@ -164,7 +164,7 @@ class Tekton {
         byte* destView = (byte*) &dest;
 
         for(int i=0;i<16;i++){
-            destView[invP[i]] = invS[(unsigned char) src[i]];
+            destView[invP[i]] = invS[src[i]];
         }
 
         return dest;
