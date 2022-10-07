@@ -1,0 +1,44 @@
+#include <gtest/gtest.h>
+#include <cstdlib>
+#include "tekton.hxx"
+
+TEST(Tekton, TestConversion) {
+
+  uint128 num = 1;
+
+  ASSERT_EQ(1, toUint128(toBytes(num)));
+
+}
+
+TEST(Tekton, TestDiffusion){
+  uint128 num = 1;
+
+  Tekton tek(toBytes(1));
+       
+  ASSERT_EQ(num, tek.diffusion(tek.diffusion(num)));
+}
+
+
+TEST(Tekton, TestEncryptDecrypt) {
+
+  uint128 key = rand();
+  Tekton tek(toBytes(key));
+
+  for(int i=0;i<10000;i++){
+    uint128 r = rand();
+
+    byte* payload = toBytes(r);
+    byte* cipher = tek.encrypt(payload);
+    byte* result = tek.decrypt(cipher);
+
+    uint128 r2 = toUint128(result);
+
+    ASSERT_TRUE(r == r2);
+  }
+
+}
+
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
