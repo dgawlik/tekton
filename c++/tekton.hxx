@@ -56,32 +56,22 @@ class Tekton {
             S[ib] = t;
         }
 
-        unsigned int _mask1a[4] = {0b01010101010101010101010101010101,0b01010101010101010101010101010101,0b01010101010101010101010101010101,0b01010101010101010101010101010101};
-        unsigned int _mask1b[4] = {0b10101010101010101010101010101010,0b10101010101010101010101010101010,0b10101010101010101010101010101010,0b10101010101010101010101010101010};
-        unsigned int _mask2a[4] = {0b00110011001100110011001100110011, 0b00110011001100110011001100110011,0b00110011001100110011001100110011,0b00110011001100110011001100110011};
-        unsigned int _mask2b[4] = {0b11001100110011001100110011001100,0b11001100110011001100110011001100,0b11001100110011001100110011001100,0b11001100110011001100110011001100};
-        unsigned int _mask3a[4] = {0b00001111000011110000111100001111,0b00001111000011110000111100001111,0b00001111000011110000111100001111,0b00001111000011110000111100001111};
-        unsigned int _mask3b[4] = {0b11110000111100001111000011110000, 0b11110000111100001111000011110000,0b11110000111100001111000011110000,0b11110000111100001111000011110000};
-        unsigned int _mask4a[4] = {0b00000000111111110000000011111111, 0b00000000111111110000000011111111,0b00000000111111110000000011111111,0b00000000111111110000000011111111};
-        unsigned int _mask4b[4] = {0b11111111000000001111111100000000,0b11111111000000001111111100000000,0b11111111000000001111111100000000,0b11111111000000001111111100000000};
-        unsigned int _mask5a[4] = {0b00000000000000001111111111111111,0b00000000000000001111111111111111,0b00000000000000001111111111111111,0b00000000000000001111111111111111};
-        unsigned int _mask5b[4] = {0b11111111111111110000000000000000,0b11111111111111110000000000000000,0b11111111111111110000000000000000,0b11111111111111110000000000000000};
-        unsigned int _mask6b[4] = {0b00000000000000000000000000000000, 0b11111111111111111111111111111111,0b00000000000000000000000000000000, 0b11111111111111111111111111111111};
-        unsigned int _mask6a[4] = {0b11111111111111111111111111111111, 0b00000000000000000000000000000000, 0b11111111111111111111111111111111, 0b00000000000000000000000000000000};
+        unsigned int _mask1[4] = {0b01010101010101010101010101010101,0b01010101010101010101010101010101,0b01010101010101010101010101010101,0b01010101010101010101010101010101};
+        unsigned int _mask2[4] = {0b00110011001100110011001100110011, 0b00110011001100110011001100110011,0b00110011001100110011001100110011,0b00110011001100110011001100110011};
+        unsigned int _mask3[4] = {0b00001111000011110000111100001111,0b00001111000011110000111100001111,0b00001111000011110000111100001111,0b00001111000011110000111100001111};
+        unsigned int _mask4[4] = {0b00000000111111110000000011111111, 0b00000000111111110000000011111111,0b00000000111111110000000011111111,0b00000000111111110000000011111111};
+        unsigned int _mask5[4] = {0b00000000000000001111111111111111,0b00000000000000001111111111111111,0b00000000000000001111111111111111,0b00000000000000001111111111111111};
+        unsigned int _mask6[4] = {0b11111111111111111111111111111111, 0b00000000000000000000000000000000, 0b11111111111111111111111111111111, 0b00000000000000000000000000000000};
+        unsigned int _mask7[4] = {0b00000000000000000000000000000000, 0b00000000000000000000000000000000, 0b11111111111111111111111111111111, 0b11111111111111111111111111111111};
 
-        mask1a = intToUint128(_mask1a);
-        mask1b = intToUint128(_mask1b);
-        mask2a = intToUint128(_mask2a);
-        mask2b = intToUint128(_mask2b);
-        mask3a = intToUint128(_mask3a);
-        mask3b = intToUint128(_mask3b);
-        mask4a = intToUint128(_mask4a);
-        mask4b = intToUint128(_mask4b);
-        mask5a = intToUint128(_mask5a);
-        mask5b = intToUint128(_mask5b);
-        mask6a = intToUint128(_mask6a);
-        mask6b = intToUint128(_mask6b);
-        
+
+        mask1 = intToUint128(_mask1);
+        mask2 = intToUint128(_mask2);
+        mask3 = intToUint128(_mask3);
+        mask4 = intToUint128(_mask4);
+        mask5 = intToUint128(_mask5);
+        mask6 = intToUint128(_mask6);
+        mask7 = intToUint128(_mask7);
 
 
         for(int i=0;i<256;i++){
@@ -94,16 +84,16 @@ class Tekton {
 
         state ^= keys[0];
 
-        state = diffusionOptimized(state);
-        state = permuteSubstitute(state);
+        state = diffusion(state);
+        // state = permuteSubstitute(state);
         state ^= keys[1];
 
-        state = diffusionOptimized(state);
-        state = permuteSubstitute(state);
+        state = diffusion(state);
+        // state = permuteSubstitute(state);
         state ^= keys[2];
 
-        state = diffusionOptimized(state);
-        state = permuteSubstitute(state);
+        state = diffusion(state);
+        // state = permuteSubstitute(state);
         state ^= keys[3];
 
         return toBytes(state);
@@ -113,16 +103,16 @@ class Tekton {
         uint128 state = toUint128(cipher);
 
         state ^= keys[3];
-        state = invPermuteSubstitute(state);
-        state = diffusionOptimized(state);
+        // state = invPermuteSubstitute(state);
+        state = diffusion(state);
 
         state ^= keys[2];
-        state = invPermuteSubstitute(state);
-        state = diffusionOptimized(state);
+        // state = invPermuteSubstitute(state);
+        state = diffusion(state);
 
         state ^= keys[1];
-        state = invPermuteSubstitute(state);
-        state = diffusionOptimized(state);
+        // state = invPermuteSubstitute(state);
+        state = diffusion(state);
 
         state ^= keys[0];
 
@@ -131,100 +121,23 @@ class Tekton {
 
 
     uint128 diffusion(uint128& x){
-        uint128 p1 = (x & mask1a) << 1;
-        uint128 p2 = (x & mask2a) << 2;
-        uint128 p3 = (x & mask3a) << 4;
-        uint128 p4 = (x & mask4a) << 8;
-        uint128 p5 = (x & mask5a) << 16;
-        uint128 p6 = (x & mask6a) << 32;
+        uint128 p1 = (x & mask1) << 1;
+        uint128 p2 = (x & mask2) << 2;
+        uint128 p3 = (x & mask3) << 4;
+        uint128 p4 = (x & mask4) << 8;
+        uint128 p5 = (x & mask5) << 16;
+        uint128 p6 = (x & mask6) << 32;
+        uint128 p13 = (x & mask7) << 64;
 
-        uint128 p7 = (x & mask1b) >> 1;
-        uint128 p8 = (x & mask2b) >> 2;
-        uint128 p9 = (x & mask3b) >> 4;
-        uint128 p10 = (x & mask4b) >> 8;
-        uint128 p11 = (x & mask5b) >> 16;
-        uint128 p12 = (x & mask6b) >> 32;
+        uint128 p7 = (x & ~mask1) >> 1;
+        uint128 p8 = (x & ~mask2) >> 2;
+        uint128 p9 = (x & ~mask3) >> 4;
+        uint128 p10 = (x & ~mask4) >> 8;
+        uint128 p11 = (x & ~mask5) >> 16;
+        uint128 p12 = (x & ~mask6) >> 32;
+        uint128 p14 = (x & ~mask7) >> 64;
        
-        return x ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6 ^ p7 ^ p8 ^p9 ^ p10 ^ p11 ^ p12;
-    }
-
-
-    uint128 diffusionOptimized(uint128& x){
-        __m128i vx = _mm_loadu_si128((const __m128i_u *) &x);
-
-
-        __m128i vtmp;
-        __m128i vmask;
-
-        vmask = _mm_loadu_si128((const __m128i_u *) &mask1a);
-        vtmp = _mm_and_si128(vmask, vx);
-        __m128i vp1 = _mm_slli_epi64(vtmp, 1);
-
-        vmask = _mm_loadu_si128((const __m128i_u *) &mask2a);
-        vtmp = _mm_and_si128(vmask, vx);
-        __m128i vp2 = _mm_slli_epi64(vtmp, 2);
-
-        vmask = _mm_loadu_si128((const __m128i_u *) &mask3a);
-        vtmp = _mm_and_si128(vmask, vx);
-        __m128i vp3 = _mm_slli_epi64(vtmp, 4);
-
-        vmask = _mm_loadu_si128((const __m128i_u *) &mask4a);
-        vtmp = _mm_and_si128(vmask, vx);
-        __m128i vp4 = _mm_bslli_si128(vtmp, 1);
-
-        vmask = _mm_loadu_si128((const __m128i_u *) &mask5a);
-        vtmp = _mm_and_si128(vmask, vx);
-        __m128i vp5 = _mm_bslli_si128(vtmp, 2);
-
-        vmask = _mm_loadu_si128((const __m128i_u *) &mask6a);
-        vtmp = _mm_and_si128(vmask, vx);
-        __m128i vp6 = _mm_bslli_si128(vtmp, 4);
-
-
-         vmask = _mm_loadu_si128((const __m128i_u *) &mask1b);
-        vtmp = _mm_and_si128(vmask, vx);
-        __m128i vp7 = _mm_srli_epi64(vtmp, 1);
-
-         vmask = _mm_loadu_si128((const __m128i_u *) &mask2b);
-        vtmp = _mm_and_si128(vmask, vx);
-        __m128i vp8 = _mm_srli_epi64(vtmp, 2);
-
-        vmask = _mm_loadu_si128((const __m128i_u *) &mask3b);
-        vtmp = _mm_and_si128(vmask, vx);
-        __m128i vp9 = _mm_srli_epi64(vtmp, 4);
-
-        vmask = _mm_loadu_si128((const __m128i_u *) &mask4b);
-        vtmp = _mm_and_si128(vmask, vx);
-        __m128i vp10 = _mm_bsrli_si128(vtmp, 1);
-
-        vmask = _mm_loadu_si128((const __m128i_u *) &mask5b);
-        vtmp = _mm_and_si128(vmask, vx);
-        __m128i vp11 = _mm_bsrli_si128(vtmp, 2);
-
-        vmask = _mm_loadu_si128((const __m128i_u *) &mask6b);
-        vtmp = _mm_and_si128(vmask, vx);
-        __m128i vp12 = _mm_bsrli_si128(vtmp, 4);
-        
-
-        __m128i vp13 = _mm_xor_si128(vp1, vp2);
-        __m128i vp14 = _mm_xor_si128(vp3, vp4);
-        __m128i vp15 = _mm_xor_si128(vp5, vp6);
-        __m128i vp16 = _mm_xor_si128(vp7, vp8);
-        __m128i vp17 = _mm_xor_si128(vp9, vp10);
-        __m128i vp18 = _mm_xor_si128(vp11, vp12);
-
-        __m128i vp19 = _mm_xor_si128(vp13, vp14);
-        __m128i vp20 = _mm_xor_si128(vp15, vp16);
-        __m128i vp21 = _mm_xor_si128(vp17, vp18);
-
-        __m128i vp22 = _mm_xor_si128(vp19, vp20);
-        vx = _mm_xor_si128(vx, vp21);
-        vx = _mm_xor_si128(vx, vp22);
-
-        uint128 result;
-        _mm_storeu_si128((__m128i_u*)&result, vx);
-       
-        return result;
+        return x ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6 ^ p7 ^ p8 ^p9 ^ p10 ^ p11 ^ p12 ^ p13 ^ p14;
     }
 
     uint128 permuteSubstitute(uint128& x){
@@ -257,11 +170,6 @@ class Tekton {
     int invP[16];
     int S[256];
     int invS[256];
-    uint128 mask1a, mask1b;
-    uint128 mask2a, mask2b;
-    uint128 mask3a, mask3b;
-    uint128 mask4a, mask4b;
-    uint128 mask5a, mask5b;
-    uint128 mask6a, mask6b;
+    uint128 mask1, mask2, mask3, mask4, mask5, mask6, mask7;
 
 };
