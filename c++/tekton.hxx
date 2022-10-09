@@ -12,11 +12,9 @@ inline uint128 toUint128(byte* bytes){
 }
 
 inline byte* toBytes(uint128 num){
-    byte* result = new byte[16];
-    uint128* view = (uint128*) &result[0];
-    *view = num;
-
-    return result;
+    uint128* result = new uint128;
+    *result = num;
+    return (byte*) result;
 }
 
 
