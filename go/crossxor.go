@@ -172,10 +172,14 @@ func diffusionUint64(x uint64) uint64 {
 	return x ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6 ^ p7 ^ p8 ^ p9 ^ p10 ^ p11 ^ p12
 }
 
-func diffusion(x *U128) {
+func diffusion128(x *U128) {
 	convX := x.getLongs()
 	convX[0] = diffusionUint64(convX[0])
 	convX[1] = diffusionUint64(convX[1])
+	c0 := convX[1] ^ uint64(0)
+	c1 := convX[0] ^ uint64(0)
+	convX[0] = c0
+	convX[1] = c1
 	x.saveLongs(&convX)
 }
 
@@ -190,7 +194,7 @@ func (st *State) doEncrypt(x U128) U128 {
 
 	state := x
 
-	diffusion(&state)
+	diffusion128(&state)
 	st.permuteSubstitute(&state)
 
 	state.xor(&st.Keys[1])
@@ -209,7 +213,7 @@ func (st *State) doDecrypt(x U128) U128 {
 	state.xor(&st.Keys[1])
 
 	st.invPermuteSubstitute(&state)
-	diffusion(&state)
+	diffusion128(&state)
 
 	return state
 }
