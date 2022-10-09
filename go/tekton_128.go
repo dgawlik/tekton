@@ -17,7 +17,7 @@ var decrypt = flag.String("decrypt", "", "Decrypts 128-bit hash string")
 
 type U128 [16]byte
 
-type State struct {
+type StateU128 struct {
 	Keys []U128
 	P    [16]int
 	invP [16]int
@@ -46,7 +46,7 @@ func (key *U128) expand(P [16]int, S [256]byte, noRounds int) []U128 {
 	return keys
 }
 
-func (key *U128) bootstrap() State {
+func (key *U128) bootstrap() StateU128 {
 	Ks := (*[2]uint64)(unsafe.Pointer(&key[0]))
 
 	K := Ks[0] ^ Ks[1]
@@ -86,7 +86,7 @@ func (key *U128) bootstrap() State {
 		invS[S[i]] = byte(i)
 	}
 
-	return State{key.expand(P, S, 2), P, invP, S, invS}
+	return StateU128{key.expand(P, S, 2), P, invP, S, invS}
 
 }
 
@@ -124,10 +124,6 @@ func randomStringU128() string {
 	buf.WriteString(fmt.Sprintf("%016x", lo))
 
 	return buf.String()
-}
-
-func randomStringU256() string {
-	return randomStringU128() + randomStringU128()
 }
 
 func decode(text string) []byte {
@@ -172,14 +168,10 @@ func diffusionUint64(x uint64) uint64 {
 	return x ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6 ^ p7 ^ p8 ^ p9 ^ p10 ^ p11 ^ p12
 }
 
-func (x *U128) diffusion128() {
-	cX, cY := x.longView()
-	*cX = diffusionUint64(*cX)
-	*cY = diffusionUint64(*cY)
-	c0 := *cY ^ uint64(0)
-	c1 := *cX ^ uint64(0)
-	*cX = c0
-	*cY = c1
+func (x *U128) diffusion() {
+	hi, lo := x.longView()
+	*hi = diffusionUint64(*hi)
+	*lo = diffusionUint64(*lo)
 }
 
 func (x *U128) xor(y *U128) {
@@ -189,15 +181,15 @@ func (x *U128) xor(y *U128) {
 	}
 }
 
-func (st *State) doEncrypt(x U128) U128 {
+func (st *StateU128) doEncrypt(x U128) U128 {
 
 	state := x
 
-	state.diffusion128()
+	state.diffusion()
 	state.permuteSubstitute(&st.P, &st.S)
 	state.xor(&st.Keys[0])
 
-	state.diffusion128()
+	state.diffusion()
 	state.permuteSubstitute(&st.P, &st.S)
 	state.xor(&st.Keys[1])
 
@@ -205,16 +197,16 @@ func (st *State) doEncrypt(x U128) U128 {
 
 }
 
-func (st *State) doDecrypt(x U128) U128 {
+func (st *StateU128) doDecrypt(x U128) U128 {
 	state := x
 
 	state.xor(&st.Keys[1])
 	state.invPermuteSubstitute(&st.invP, &st.invS)
-	state.diffusion128()
+	state.diffusion()
 
 	state.xor(&st.Keys[0])
 	state.invPermuteSubstitute(&st.invP, &st.invS)
-	state.diffusion128()
+	state.diffusion()
 
 	return state
 }
