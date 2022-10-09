@@ -8,11 +8,7 @@ typedef u_int8_t byte;
 
 
 inline uint128 toUint128(byte* bytes){
-    return *((uint128*)bytes);
-}
-
-inline uint128 intToUint128(unsigned int ints[4]){
-    return *((uint128*)ints);
+    return *((uint128*)&bytes[0]);
 }
 
 inline byte* toBytes(uint128 num){
@@ -56,22 +52,13 @@ class Tekton {
             S[ib] = t;
         }
 
-        unsigned int _mask1[4] = {0b01010101010101010101010101010101,0b01010101010101010101010101010101,0b01010101010101010101010101010101,0b01010101010101010101010101010101};
-        unsigned int _mask2[4] = {0b00110011001100110011001100110011, 0b00110011001100110011001100110011,0b00110011001100110011001100110011,0b00110011001100110011001100110011};
-        unsigned int _mask3[4] = {0b00001111000011110000111100001111,0b00001111000011110000111100001111,0b00001111000011110000111100001111,0b00001111000011110000111100001111};
-        unsigned int _mask4[4] = {0b00000000111111110000000011111111, 0b00000000111111110000000011111111,0b00000000111111110000000011111111,0b00000000111111110000000011111111};
-        unsigned int _mask5[4] = {0b00000000000000001111111111111111,0b00000000000000001111111111111111,0b00000000000000001111111111111111,0b00000000000000001111111111111111};
-        unsigned int _mask6[4] = {0b11111111111111111111111111111111, 0b00000000000000000000000000000000, 0b11111111111111111111111111111111, 0b00000000000000000000000000000000};
-        unsigned int _mask7[4] = {0b00000000000000000000000000000000, 0b00000000000000000000000000000000, 0b11111111111111111111111111111111, 0b11111111111111111111111111111111};
-
-
-        mask1 = intToUint128(_mask1);
-        mask2 = intToUint128(_mask2);
-        mask3 = intToUint128(_mask3);
-        mask4 = intToUint128(_mask4);
-        mask5 = intToUint128(_mask5);
-        mask6 = intToUint128(_mask6);
-        mask7 = intToUint128(_mask7);
+        mask1 = makeMask(0b01010101010101010101010101010101U);
+        mask2 = makeMask(0b00110011001100110011001100110011U);
+        mask3 = makeMask(0b00001111000011110000111100001111U);
+        mask4 = makeMask(0b00000000111111110000000011111111U);
+        mask5 = makeMask(0b00000000000000001111111111111111U);
+        mask6 = makeMask(0b00000000000000000000000000000000U, 0b11111111111111111111111111111111U);
+        mask7 = makeMask(0b0000000000000000000000000000000000000000000000000000000000000000UL, 0b1111111111111111111111111111111111111111111111111111111111111111UL);
 
 
         for(int i=0;i<256;i++){
@@ -83,17 +70,12 @@ class Tekton {
         uint128 state = toUint128(payload);
 
         state ^= keys[0];
+        state = permuteSubstitute(state);
 
         state = diffusion(state);
-        // state = permuteSubstitute(state);
+        
         state ^= keys[1];
-
-        state = diffusion(state);
-        // state = permuteSubstitute(state);
         state ^= keys[2];
-
-        state = diffusion(state);
-        // state = permuteSubstitute(state);
         state ^= keys[3];
 
         return toBytes(state);
@@ -103,20 +85,51 @@ class Tekton {
         uint128 state = toUint128(cipher);
 
         state ^= keys[3];
-        // state = invPermuteSubstitute(state);
-        state = diffusion(state);
-
         state ^= keys[2];
-        // state = invPermuteSubstitute(state);
-        state = diffusion(state);
-
         state ^= keys[1];
-        // state = invPermuteSubstitute(state);
+        
         state = diffusion(state);
 
+        state = invPermuteSubstitute(state);
         state ^= keys[0];
 
         return toBytes(state);
+    }
+
+    uint128 makeMask(uint m){
+        uint128 result;
+
+        result |= m;
+        for(int i=0;i<3;i++){
+            result <<= 32;
+            result |= m;
+        }
+
+        return result;
+    }
+
+    uint128 makeMask(uint hi, uint lo){
+        uint128 result;
+
+        result |= hi;
+        result <<= 32;
+        result |= lo;
+        result <<= 32;
+        result |= hi;
+        result <<= 32;
+        result |= lo;
+
+        return result;
+    }
+
+    uint128 makeMask(ulong hi, ulong lo){
+        uint128 result;
+
+        result |= hi;
+        result <<= 64;
+        result |= lo;
+
+        return result;
     }
 
 
@@ -137,7 +150,7 @@ class Tekton {
         uint128 p12 = (x & ~mask6) >> 32;
         uint128 p14 = (x & ~mask7) >> 64;
        
-        return x ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6 ^ p7 ^ p8 ^p9 ^ p10 ^ p11 ^ p12 ^ p13 ^ p14;
+        return x ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6 ^ p7 ^ p8 ^p9 ^ p10 ^ p11 ^ p12;
     }
 
     uint128 permuteSubstitute(uint128& x){

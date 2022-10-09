@@ -4,16 +4,16 @@
 
 TEST(Tekton, TestConversion) {
 
-  uint128 num = 1;
+  uint128 num = 11231231414414;
 
-  ASSERT_EQ(1, toUint128(toBytes(num)));
+  ASSERT_EQ(11231231414414, toUint128(toBytes(num)));
 
 }
 
 TEST(Tekton, TestDiffusion){
   uint128 num = 1;
 
-  Tekton tek(toBytes(1));
+  Tekton tek(toBytes(11231231414414));
   
   auto step = tek.diffusion(num);
 
