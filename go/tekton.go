@@ -39,7 +39,7 @@ func (key *U128) expand(P [16]int, S [256]byte, noRounds int) []U128 {
 		*hi <<= i
 		*lo <<= i
 
-		newKey.permuteSubstitute(P, S)
+		newKey.permuteSubstitute(&P, &S)
 		keys = append(keys, newKey)
 	}
 
@@ -90,7 +90,7 @@ func (key *U128) bootstrap() State {
 
 }
 
-func (a *U128) permuteSubstitute(P [16]int, S [256]byte) {
+func (a *U128) permuteSubstitute(P *[16]int, S *[256]byte) {
 	var result U128
 
 	for i := 0; i < 16; i++ {
@@ -100,7 +100,7 @@ func (a *U128) permuteSubstitute(P [16]int, S [256]byte) {
 	*a = result
 }
 
-func (a *U128) invPermuteSubstitute(invP [16]int, invS [256]byte) {
+func (a *U128) invPermuteSubstitute(invP *[16]int, invS *[256]byte) {
 	var result U128
 
 	for i := 0; i < 16; i++ {
@@ -194,11 +194,11 @@ func (st *State) doEncrypt(x U128) U128 {
 	state := x
 
 	state.diffusion128()
-	state.permuteSubstitute(st.P, st.S)
+	state.permuteSubstitute(&st.P, &st.S)
 	state.xor(&st.Keys[0])
 
 	state.diffusion128()
-	state.permuteSubstitute(st.P, st.S)
+	state.permuteSubstitute(&st.P, &st.S)
 	state.xor(&st.Keys[1])
 
 	return state
@@ -209,11 +209,11 @@ func (st *State) doDecrypt(x U128) U128 {
 	state := x
 
 	state.xor(&st.Keys[1])
-	state.invPermuteSubstitute(st.invP, st.invS)
+	state.invPermuteSubstitute(&st.invP, &st.invS)
 	state.diffusion128()
 
 	state.xor(&st.Keys[0])
-	state.invPermuteSubstitute(st.invP, st.invS)
+	state.invPermuteSubstitute(&st.invP, &st.invS)
 	state.diffusion128()
 
 	return state
