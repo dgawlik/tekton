@@ -12,10 +12,10 @@ import (
 func TestEncryptDecypt(t *testing.T) {
 	key := hexToVector("a291a728727ac647a53193be9583c504")
 
-	st := bootstrap(key)
+	st := key.bootstrap()
 
 	for i := 0; i < 10_000_00; i++ {
-		A := hexToVector(randomString())
+		A := hexToVector(randomStringU128())
 		cipherA := st.doEncrypt(A)
 		A2 := st.doDecrypt(cipherA)
 
@@ -28,11 +28,11 @@ func TestEncryptDecypt(t *testing.T) {
 func TestTimeOfEncryption(t *testing.T) {
 	key := hexToVector("a291a728727ac647a53193be9583c504")
 
-	st := bootstrap(key)
+	st := key.bootstrap()
 
 	var totalTime time.Duration
 	for i := 0; i < 10_000_000; i++ {
-		s := randomString()
+		s := randomStringU128()
 
 		v := hexToVector(s)
 		start := time.Now()
@@ -46,11 +46,11 @@ func TestTimeOfEncryption(t *testing.T) {
 func TestTimeOfDecryption(t *testing.T) {
 	key := hexToVector("a291a728727ac647a53193be9583c504")
 
-	st := bootstrap(key)
+	st := key.bootstrap()
 
 	var totalTime time.Duration
 	for i := 0; i < 10_000_000; i++ {
-		s := randomString()
+		s := randomStringU128()
 
 		v := hexToVector(s)
 		start := time.Now()
@@ -69,7 +69,7 @@ func TestTimeOfEncryptionAes(t *testing.T) {
 
 	var totalTime time.Duration
 	for i := 0; i < 10_000_000; i++ {
-		s := randomString()
+		s := randomStringU128()
 		hexS, err := hex.DecodeString(s)
 		if err != nil {
 			panic(err)
@@ -92,7 +92,7 @@ func TestTimeOfDecryptionAes(t *testing.T) {
 
 	var totalTime time.Duration
 	for i := 0; i < 10_000_000; i++ {
-		s := randomString()
+		s := randomStringU128()
 		hexS, err := hex.DecodeString(s)
 		if err != nil {
 			panic(err)

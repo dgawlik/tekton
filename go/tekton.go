@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"math/bits"
 	"math/rand"
 	"time"
 	"unsafe"
@@ -30,7 +29,24 @@ func hexToVector(x string) U128 {
 	return *(*U128)(decode(x))
 }
 
-func bootstrap(key U128) State {
+func (key *U128) expand(P [16]int, S [256]byte, noRounds int) []U128 {
+	var keys []U128
+
+	for i := 1; i <= noRounds; i++ {
+		newKey := *key
+
+		hi, lo := newKey.longView()
+		*hi <<= i
+		*lo <<= i
+
+		newKey.permuteSubstitute(P, S)
+		keys = append(keys, newKey)
+	}
+
+	return keys
+}
+
+func (key *U128) bootstrap() State {
 	Ks := (*[2]uint64)(unsafe.Pointer(&key[0]))
 
 	K := Ks[0] ^ Ks[1]
@@ -70,37 +86,25 @@ func bootstrap(key U128) State {
 		invS[S[i]] = byte(i)
 	}
 
-	keys := make([]U128, 1)
-	keys = append(keys, key)
-
-	shift := 1
-	for i := 0; i < 6; i++ {
-		k := key
-		cK := (*[2]uint64)(unsafe.Pointer(&k[0]))
-		cK[0], cK[1] = bits.RotateLeft64(cK[0], -i), bits.RotateLeft64(cK[1], -i)
-		keys = append(keys, k)
-		shift *= 2
-	}
-
-	return State{keys, P, invP, S, invS}
+	return State{key.expand(P, S, 2), P, invP, S, invS}
 
 }
 
-func (a *U128) permuteSubstitute(st *State) {
+func (a *U128) permuteSubstitute(P [16]int, S [256]byte) {
 	var result U128
 
 	for i := 0; i < 16; i++ {
-		result[st.P[i]] = st.S[a[i]]
+		result[P[i]] = S[a[i]]
 	}
 
 	*a = result
 }
 
-func (a *U128) invPermuteSubstitute(st *State) {
+func (a *U128) invPermuteSubstitute(invP [16]int, invS [256]byte) {
 	var result U128
 
 	for i := 0; i < 16; i++ {
-		result[st.invP[i]] = st.invS[a[i]]
+		result[invP[i]] = invS[a[i]]
 	}
 
 	*a = result
@@ -109,7 +113,7 @@ func (a *U128) invPermuteSubstitute(st *State) {
 var SOURCE = rand.NewSource(time.Now().UnixNano())
 var RNG = rand.New(SOURCE)
 
-func randomString() string {
+func randomStringU128() string {
 
 	var buf bytes.Buffer
 
@@ -120,6 +124,10 @@ func randomString() string {
 	buf.WriteString(fmt.Sprintf("%016x", lo))
 
 	return buf.String()
+}
+
+func randomStringU256() string {
+	return randomStringU128() + randomStringU128()
 }
 
 func decode(text string) []byte {
@@ -138,21 +146,11 @@ func encode(payload []byte) string {
 	return buf.String()
 }
 
-func (x *U128) getLongs() [2]uint64 {
-	var result [2]uint64
-	result[0] = *((*uint64)(unsafe.Pointer(x)))
-	result[1] = *((*uint64)(unsafe.Pointer(uintptr(unsafe.Pointer(&x[0])) + 8*unsafe.Sizeof(x[0]))))
+func (x *U128) longView() (*uint64, *uint64) {
+	hi := (*uint64)(unsafe.Pointer(x))
+	lo := (*uint64)(unsafe.Pointer(uintptr(unsafe.Pointer(&x[0])) + 8*unsafe.Sizeof(x[0])))
 
-	return result
-}
-
-func (result *U128) saveLongs(x *[2]uint64) {
-
-	hi := (*[8]byte)(unsafe.Pointer(x))
-	lo := (*[8]byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&x[0])) + 1*unsafe.Sizeof(x[0])))
-
-	copy(result[:], hi[:])
-	copy(result[len(hi):], lo[:])
+	return hi, lo
 }
 
 func diffusionUint64(x uint64) uint64 {
@@ -175,14 +173,13 @@ func diffusionUint64(x uint64) uint64 {
 }
 
 func (x *U128) diffusion128() {
-	convX := x.getLongs()
-	convX[0] = diffusionUint64(convX[0])
-	convX[1] = diffusionUint64(convX[1])
-	c0 := convX[1] ^ uint64(0)
-	c1 := convX[0] ^ uint64(0)
-	convX[0] = c0
-	convX[1] = c1
-	x.saveLongs(&convX)
+	cX, cY := x.longView()
+	*cX = diffusionUint64(*cX)
+	*cY = diffusionUint64(*cY)
+	c0 := *cY ^ uint64(0)
+	c1 := *cX ^ uint64(0)
+	*cX = c0
+	*cY = c1
 }
 
 func (x *U128) xor(y *U128) {
@@ -197,11 +194,12 @@ func (st *State) doEncrypt(x U128) U128 {
 	state := x
 
 	state.diffusion128()
-	state.permuteSubstitute(st)
+	state.permuteSubstitute(st.P, st.S)
+	state.xor(&st.Keys[0])
 
+	state.diffusion128()
+	state.permuteSubstitute(st.P, st.S)
 	state.xor(&st.Keys[1])
-	state.xor(&st.Keys[2])
-	state.xor(&st.Keys[3])
 
 	return state
 
@@ -210,11 +208,12 @@ func (st *State) doEncrypt(x U128) U128 {
 func (st *State) doDecrypt(x U128) U128 {
 	state := x
 
-	state.xor(&st.Keys[3])
-	state.xor(&st.Keys[2])
 	state.xor(&st.Keys[1])
+	state.invPermuteSubstitute(st.invP, st.invS)
+	state.diffusion128()
 
-	state.invPermuteSubstitute(st)
+	state.xor(&st.Keys[0])
+	state.invPermuteSubstitute(st.invP, st.invS)
 	state.diffusion128()
 
 	return state
@@ -225,12 +224,12 @@ func main() {
 	flag.Parse()
 
 	if *generate {
-		fmt.Println(randomString())
+		fmt.Println(randomStringU128())
 	} else if *encrypt != "" && *key != "" {
 		k := hexToVector(*key)
 		t := hexToVector(*encrypt)
 
-		st := bootstrap(k)
+		st := k.bootstrap()
 
 		c := st.doEncrypt(t)
 		fmt.Println(encode(c[:]))
