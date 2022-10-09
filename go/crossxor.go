@@ -86,7 +86,7 @@ func bootstrap(key U128) State {
 
 }
 
-func (st *State) permuteSubstitute(a *U128) {
+func (a *U128) permuteSubstitute(st *State) {
 	var result U128
 
 	for i := 0; i < 16; i++ {
@@ -96,7 +96,7 @@ func (st *State) permuteSubstitute(a *U128) {
 	*a = result
 }
 
-func (st *State) invPermuteSubstitute(a *U128) {
+func (a *U128) invPermuteSubstitute(st *State) {
 	var result U128
 
 	for i := 0; i < 16; i++ {
@@ -113,9 +113,11 @@ func randomString() string {
 
 	var buf bytes.Buffer
 
-	for i := 0; i < 16; i++ {
-		buf.WriteString(fmt.Sprintf("%02x", byte(RNG.Intn(256))))
-	}
+	hi := RNG.Uint64()
+	lo := RNG.Uint64()
+
+	buf.WriteString(fmt.Sprintf("%016x", hi))
+	buf.WriteString(fmt.Sprintf("%016x", lo))
 
 	return buf.String()
 }
@@ -172,7 +174,7 @@ func diffusionUint64(x uint64) uint64 {
 	return x ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6 ^ p7 ^ p8 ^ p9 ^ p10 ^ p11 ^ p12
 }
 
-func diffusion128(x *U128) {
+func (x *U128) diffusion128() {
 	convX := x.getLongs()
 	convX[0] = diffusionUint64(convX[0])
 	convX[1] = diffusionUint64(convX[1])
@@ -194,8 +196,8 @@ func (st *State) doEncrypt(x U128) U128 {
 
 	state := x
 
-	diffusion128(&state)
-	st.permuteSubstitute(&state)
+	state.diffusion128()
+	state.permuteSubstitute(st)
 
 	state.xor(&st.Keys[1])
 	state.xor(&st.Keys[2])
@@ -212,8 +214,8 @@ func (st *State) doDecrypt(x U128) U128 {
 	state.xor(&st.Keys[2])
 	state.xor(&st.Keys[1])
 
-	st.invPermuteSubstitute(&state)
-	diffusion128(&state)
+	state.invPermuteSubstitute(st)
+	state.diffusion128()
 
 	return state
 }

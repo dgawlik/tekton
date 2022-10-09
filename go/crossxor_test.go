@@ -14,7 +14,7 @@ func TestEncryptDecypt(t *testing.T) {
 
 	st := bootstrap(key)
 
-	for i := 0; i < 1_000_00; i++ {
+	for i := 0; i < 10_000_00; i++ {
 		A := hexToVector(randomString())
 		cipherA := st.doEncrypt(A)
 		A2 := st.doDecrypt(cipherA)
@@ -31,7 +31,7 @@ func TestTimeOfEncryption(t *testing.T) {
 	st := bootstrap(key)
 
 	var totalTime time.Duration
-	for i := 0; i < 1_000_000; i++ {
+	for i := 0; i < 10_000_000; i++ {
 		s := randomString()
 
 		v := hexToVector(s)
@@ -40,7 +40,7 @@ func TestTimeOfEncryption(t *testing.T) {
 		totalTime += time.Since(start)
 	}
 
-	fmt.Printf("CrossXor encryption 1M nonces %s\n", totalTime)
+	fmt.Printf("CrossXor encryption 10M nonces %s\n", totalTime)
 }
 
 func TestTimeOfDecryption(t *testing.T) {
@@ -49,7 +49,7 @@ func TestTimeOfDecryption(t *testing.T) {
 	st := bootstrap(key)
 
 	var totalTime time.Duration
-	for i := 0; i < 1_000_000; i++ {
+	for i := 0; i < 10_000_000; i++ {
 		s := randomString()
 
 		v := hexToVector(s)
@@ -58,7 +58,7 @@ func TestTimeOfDecryption(t *testing.T) {
 		totalTime += time.Since(start)
 	}
 
-	fmt.Printf("CrossXor decryption 1M nonces %s\n", totalTime)
+	fmt.Printf("CrossXor decryption 10M nonces %s\n", totalTime)
 }
 
 func TestTimeOfEncryptionAes(t *testing.T) {
@@ -68,7 +68,7 @@ func TestTimeOfEncryptionAes(t *testing.T) {
 	aes, _ := aes.NewCipher(hexKey)
 
 	var totalTime time.Duration
-	for i := 0; i < 1_000_000; i++ {
+	for i := 0; i < 10_000_000; i++ {
 		s := randomString()
 		hexS, err := hex.DecodeString(s)
 		if err != nil {
@@ -81,7 +81,7 @@ func TestTimeOfEncryptionAes(t *testing.T) {
 		totalTime += time.Since(start)
 	}
 
-	fmt.Printf("AES encryption 1M nonces %s\n", totalTime)
+	fmt.Printf("AES encryption 10M nonces %s\n", totalTime)
 }
 
 func TestTimeOfDecryptionAes(t *testing.T) {
@@ -91,7 +91,7 @@ func TestTimeOfDecryptionAes(t *testing.T) {
 	aes, _ := aes.NewCipher(hexKey)
 
 	var totalTime time.Duration
-	for i := 0; i < 1_000_000; i++ {
+	for i := 0; i < 10_000_000; i++ {
 		s := randomString()
 		hexS, err := hex.DecodeString(s)
 		if err != nil {
@@ -104,5 +104,5 @@ func TestTimeOfDecryptionAes(t *testing.T) {
 		totalTime += time.Since(start)
 	}
 
-	fmt.Printf("AES decryption 1M nonces %s\n", totalTime)
+	fmt.Printf("AES decryption 10M nonces %s\n", totalTime)
 }
