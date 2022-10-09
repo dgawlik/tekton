@@ -16,22 +16,21 @@ var key = flag.String("key", "", "128-bit key")
 var encrypt = flag.String("encrypt", "", "Encrypts 128-bit hash string")
 var decrypt = flag.String("decrypt", "", "Decrypts 128-bit hash string")
 
-type BitVector [16]byte
-type BitIndex [128]int
+type U128 [16]byte
 
 type State struct {
-	Keys []BitVector
+	Keys []U128
 	P    [16]int
 	invP [16]int
 	S    [256]byte
 	invS [256]byte
 }
 
-func hexToVector(x string) BitVector {
-	return *(*BitVector)(decode(x))
+func hexToVector(x string) U128 {
+	return *(*U128)(decode(x))
 }
 
-func bootstrap(key BitVector) State {
+func bootstrap(key U128) State {
 	Ks := (*[2]uint64)(unsafe.Pointer(&key[0]))
 
 	K := Ks[0] ^ Ks[1]
@@ -71,7 +70,7 @@ func bootstrap(key BitVector) State {
 		invS[S[i]] = byte(i)
 	}
 
-	keys := make([]BitVector, 1)
+	keys := make([]U128, 1)
 	keys = append(keys, key)
 
 	shift := 1
@@ -87,8 +86,8 @@ func bootstrap(key BitVector) State {
 
 }
 
-func (st *State) permuteSubstitute(a *BitVector) {
-	var result BitVector
+func (st *State) permuteSubstitute(a *U128) {
+	var result U128
 
 	for i := 0; i < 16; i++ {
 		result[st.P[i]] = st.S[a[i]]
@@ -97,8 +96,8 @@ func (st *State) permuteSubstitute(a *BitVector) {
 	*a = result
 }
 
-func (st *State) invPermuteSubstitute(a *BitVector) {
-	var result BitVector
+func (st *State) invPermuteSubstitute(a *U128) {
+	var result U128
 
 	for i := 0; i < 16; i++ {
 		result[st.invP[i]] = st.invS[a[i]]
@@ -137,7 +136,7 @@ func encode(payload []byte) string {
 	return buf.String()
 }
 
-func (x *BitVector) getLongs() [2]uint64 {
+func (x *U128) getLongs() [2]uint64 {
 	var result [2]uint64
 	result[0] = *((*uint64)(unsafe.Pointer(x)))
 	result[1] = *((*uint64)(unsafe.Pointer(uintptr(unsafe.Pointer(&x[0])) + 8*unsafe.Sizeof(x[0]))))
@@ -145,7 +144,7 @@ func (x *BitVector) getLongs() [2]uint64 {
 	return result
 }
 
-func (result *BitVector) saveLongs(x *[2]uint64) {
+func (result *U128) saveLongs(x *[2]uint64) {
 
 	hi := (*[8]byte)(unsafe.Pointer(x))
 	lo := (*[8]byte)(unsafe.Pointer(uintptr(unsafe.Pointer(&x[0])) + 1*unsafe.Sizeof(x[0])))
@@ -173,21 +172,21 @@ func diffusionUint64(x uint64) uint64 {
 	return x ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6 ^ p7 ^ p8 ^ p9 ^ p10 ^ p11 ^ p12
 }
 
-func diffusion(x *BitVector) {
+func diffusion(x *U128) {
 	convX := x.getLongs()
 	convX[0] = diffusionUint64(convX[0])
 	convX[1] = diffusionUint64(convX[1])
 	x.saveLongs(&convX)
 }
 
-func (x *BitVector) xor(y *BitVector) {
+func (x *U128) xor(y *U128) {
 
 	for i := 0; i < 16; i++ {
 		x[i] ^= y[i]
 	}
 }
 
-func (st *State) doEncrypt(x BitVector) BitVector {
+func (st *State) doEncrypt(x U128) U128 {
 
 	state := x
 
@@ -202,7 +201,7 @@ func (st *State) doEncrypt(x BitVector) BitVector {
 
 }
 
-func (st *State) doDecrypt(x BitVector) BitVector {
+func (st *State) doDecrypt(x U128) U128 {
 	state := x
 
 	state.xor(&st.Keys[3])
