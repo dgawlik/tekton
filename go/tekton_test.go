@@ -98,46 +98,64 @@ func TestTimeOfDecryption(t *testing.T) {
 }
 func TestTimeOfEncryptionAes(t *testing.T) {
 	key := "a291a728727ac647a53193be9583c504"
+	key2 := "a291a728727ac647a53193be9583c504a291a728727ac647a53193be9583c504"
 	hexKey, _ := hex.DecodeString(key)
+	hexKey2, _ := hex.DecodeString(key2)
 
-	aes, _ := aes.NewCipher(hexKey)
+	aes1, _ := aes.NewCipher(hexKey)
+	aes2, _ := aes.NewCipher(hexKey2)
 
 	var totalTime time.Duration
+	var totalTime2 time.Duration
 	for i := 0; i < 2_000_000; i++ {
 		s := randomStringU128()
-		hexS, err := hex.DecodeString(s)
-		if err != nil {
-			panic(err)
-		}
+		s2 := randomStringU256()
+		hexS, _ := hex.DecodeString(s)
+		hexS2, _ := hex.DecodeString(s2)
 
 		cipher := make([]byte, 16)
 		start := time.Now()
-		aes.Encrypt(cipher, hexS)
+		aes1.Encrypt(cipher, hexS)
 		totalTime += time.Since(start)
+
+		cipher2 := make([]byte, 32)
+		start2 := time.Now()
+		aes2.Encrypt(cipher2, hexS2)
+		totalTime2 += time.Since(start2)
 	}
 
-	fmt.Printf("AES encryption 2M nonces %s\n", totalTime)
+	fmt.Printf("AES encryption 2M nonces (128-bit) %s\n", totalTime)
+	fmt.Printf("AES encryption 2M nonces (256-bit) %s\n", totalTime2)
 }
 
 func TestTimeOfDecryptionAes(t *testing.T) {
 	key := "a291a728727ac647a53193be9583c504"
+	key2 := "a291a728727ac647a53193be9583c504a291a728727ac647a53193be9583c504"
 	hexKey, _ := hex.DecodeString(key)
+	hexKey2, _ := hex.DecodeString(key2)
 
-	aes, _ := aes.NewCipher(hexKey)
+	aes1, _ := aes.NewCipher(hexKey)
+	aes2, _ := aes.NewCipher(hexKey2)
 
 	var totalTime time.Duration
+	var totalTime2 time.Duration
 	for i := 0; i < 2_000_000; i++ {
 		s := randomStringU128()
-		hexS, err := hex.DecodeString(s)
-		if err != nil {
-			panic(err)
-		}
+		s2 := randomStringU256()
+		hexS, _ := hex.DecodeString(s)
+		hexS2, _ := hex.DecodeString(s2)
 
-		cipher := make([]byte, 16)
+		buf := make([]byte, 16)
 		start := time.Now()
-		aes.Decrypt(cipher, hexS)
+		aes1.Decrypt(buf, hexS)
 		totalTime += time.Since(start)
+
+		buf2 := make([]byte, 32)
+		start2 := time.Now()
+		aes2.Decrypt(buf2, hexS2)
+		totalTime2 += time.Since(start2)
 	}
 
-	fmt.Printf("AES decryption 2M nonces %s\n", totalTime)
+	fmt.Printf("AES decryption 2M nonces (128-bit) %s\n", totalTime)
+	fmt.Printf("AES decryption 2M nonces (256-bit) %s\n", totalTime2)
 }
