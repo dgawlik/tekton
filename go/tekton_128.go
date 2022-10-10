@@ -68,19 +68,28 @@ func (key *U128) bootstrap() StateU128 {
 	}
 
 	for i := 0; i < 65_000; i++ {
-		a := r.Intn(16)
-		b := r.Intn(16)
-
 		c := r.Intn(256)
 		d := r.Intn(256)
 
-		P[a], P[b] = P[b], P[a]
 		S[c], S[d] = S[d], S[c]
 	}
 
-	for i := 0; i < 16; i++ {
-		invP[P[i]] = i
-	}
+	P[0] = 9
+	invP[9] = 0
+	P[1] = 13
+	invP[13] = 1
+	P[2] = 10
+	invP[10] = 2
+	P[3] = 14
+	invP[14] = 3
+	P[4] = 8
+	invP[8] = 4
+	P[5] = 11
+	invP[11] = 5
+	P[6] = 15
+	invP[15] = 6
+	P[7] = 12
+	invP[12] = 7
 
 	for i := 0; i < 256; i++ {
 		invS[S[i]] = byte(i)
@@ -91,23 +100,29 @@ func (key *U128) bootstrap() StateU128 {
 }
 
 func (a *U128) permuteSubstitute(P *[16]int, S *[256]byte) {
-	var result U128
 
-	for i := 0; i < 16; i++ {
-		result[P[i]] = S[a[i]]
+	for i := 0; i < 8; i++ {
+		t := a[i]
+		a[i] = a[P[i]]
+		a[P[i]] = t
 	}
 
-	*a = result
+	for i := 0; i < 16; i++ {
+		a[i] = S[a[i]]
+	}
 }
 
 func (a *U128) invPermuteSubstitute(invP *[16]int, invS *[256]byte) {
-	var result U128
 
-	for i := 0; i < 16; i++ {
-		result[invP[i]] = invS[a[i]]
+	for i := 8; i < 16; i++ {
+		t := a[i]
+		a[i] = a[invP[i]]
+		a[invP[i]] = t
 	}
 
-	*a = result
+	for i := 0; i < 16; i++ {
+		a[i] = invS[a[i]]
+	}
 }
 
 var SOURCE = rand.NewSource(time.Now().UnixNano())
@@ -170,6 +185,7 @@ func diffusionUint64(x uint64) uint64 {
 
 func (x *U128) diffusion() {
 	hi, lo := x.longView()
+
 	*hi = diffusionUint64(*hi)
 	*lo = diffusionUint64(*lo)
 }
