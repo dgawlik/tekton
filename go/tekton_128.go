@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"math/bits"
 	"math/rand"
 	"time"
 	"unsafe"
@@ -192,6 +193,11 @@ func diffusionUint64(x uint64) uint64 {
 	p6 := (x & uint64(0b_00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111)) << 32
 
 	return x ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6
+}
+
+func (x *U128) onesCount() int {
+	hi, lo := x.longView()
+	return bits.OnesCount64(*hi) + bits.OnesCount64(*lo)
 }
 
 func (x *U128) diffusion() {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math/bits"
 	"math/rand"
 	"unsafe"
 )
@@ -17,6 +18,11 @@ type StateU256 struct {
 
 func hexToVector256(x string) U256 {
 	return *(*U256)(decode(x))
+}
+
+func (x *U256) onesCount() int {
+	hi, m2, m1, lo := x.longView()
+	return bits.OnesCount64(*hi) + bits.OnesCount64(*m2) + bits.OnesCount64(*m1) + bits.OnesCount64(*lo)
 }
 
 func (key *U256) expand(P32 [32]int, S [256]byte, noRounds int) []U256 {
