@@ -105,7 +105,7 @@ func (key *U128) bootstrap() StateU128 {
 		invS[S[i]] = byte(i)
 	}
 
-	return StateU128{key.expand(P, S, 2), P, invP, S, invS}
+	return StateU128{key.expand(P, S, 3), P, invP, S, invS}
 
 }
 
@@ -226,12 +226,22 @@ func (st *StateU128) doEncrypt(x U128) U128 {
 	state.substitute(&st.S)
 	state.xor(&st.Keys[1])
 
+	state.diffusion()
+	state.permute(&st.P)
+	state.substitute(&st.S)
+	state.xor(&st.Keys[2])
+
 	return state
 
 }
 
 func (st *StateU128) doDecrypt(x U128) U128 {
 	state := x
+
+	state.xor(&st.Keys[2])
+	state.invSubstitute(&st.invS)
+	state.invPermute(&st.invP)
+	state.diffusion()
 
 	state.xor(&st.Keys[1])
 	state.invSubstitute(&st.invS)

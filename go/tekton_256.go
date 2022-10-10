@@ -78,7 +78,7 @@ func (key *U256) bootstrap() StateU256 {
 		invS[S[i]] = byte(i)
 	}
 
-	return StateU256{key.expand(P32, S, 3), P32, invP32, S, invS}
+	return StateU256{key.expand(P32, S, 4), P32, invP32, S, invS}
 
 }
 
@@ -175,12 +175,22 @@ func (st *StateU256) doEncrypt(x U256) U256 {
 	state.substitute(&st.S)
 	state.xor(&st.Keys[2])
 
+	state.diffusion()
+	state.permute(&st.P32)
+	state.substitute(&st.S)
+	state.xor(&st.Keys[3])
+
 	return state
 
 }
 
 func (st *StateU256) doDecrypt(x U256) U256 {
 	state := x
+
+	state.xor(&st.Keys[3])
+	state.invSubstitute(&st.invS)
+	state.invPermute(&st.invP32)
+	state.diffusion()
 
 	state.xor(&st.Keys[2])
 	state.invSubstitute(&st.invS)
