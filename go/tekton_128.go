@@ -39,7 +39,8 @@ func (key *U128) expand(P [16]int, S [256]byte, noRounds int) []U128 {
 		*hi <<= i
 		*lo <<= i
 
-		newKey.permuteSubstitute(&P, &S)
+		newKey.permute(&P)
+		newKey.substitute(&S)
 		keys = append(keys, newKey)
 	}
 
@@ -108,32 +109,38 @@ func (key *U128) bootstrap() StateU128 {
 
 }
 
-func (a *U128) permuteSubstitute(P *[16]int, S *[256]byte) {
+func (a *U128) permute(P *[16]int) {
 	var result U128
 
 	for i := 0; i < 16; i++ {
 		result[i] = a[P[i]]
 	}
 
-	for i := 0; i < 16; i++ {
-		result[i] = S[result[i]]
-	}
-
 	*a = result
 }
 
-func (a *U128) invPermuteSubstitute(invP *[16]int, invS *[256]byte) {
+func (a *U128) substitute(S *[256]byte) {
+	for i := 0; i < 16; i++ {
+		a[i] = S[a[i]]
+	}
+
+}
+
+func (a *U128) invPermute(invP *[16]int) {
 	var result U128
 
 	for i := 0; i < 16; i++ {
 		result[i] = a[invP[i]]
 	}
 
+	*a = result
+}
+
+func (a *U128) invSubstitute(invS *[256]byte) {
 	for i := 0; i < 16; i++ {
-		result[i] = invS[result[i]]
+		a[i] = invS[a[i]]
 	}
 
-	*a = result
 }
 
 var SOURCE = rand.NewSource(time.Now().UnixNano())
@@ -184,21 +191,18 @@ func diffusionUint64(x uint64) uint64 {
 	p5 := (x & uint64(0b_00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111)) << 16
 	p6 := (x & uint64(0b_00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111)) << 32
 
-	p7 := (x & uint64(0b_10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010)) >> 1
-	p8 := (x & uint64(0b_11001100_11001100_11001100_11001100_11001100_11001100_11001100_11001100)) >> 2
-	p9 := (x & uint64(0b_11110000_11110000_11110000_11110000_11110000_11110000_11110000_11110000)) >> 4
-	p10 := (x & uint64(0b_11111111_00000000_11111111_00000000_11111111_00000000_11111111_00000000)) >> 8
-	p11 := (x & uint64(0b_11111111_11111111_00000000_00000000_11111111_11111111_00000000_00000000)) >> 16
-	p12 := (x & uint64(0b_11111111_11111111_11111111_11111111_00000000_00000000_00000000_00000000)) >> 32
-
-	return x ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6 ^ p7 ^ p8 ^ p9 ^ p10 ^ p11 ^ p12
+	return x ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6
 }
 
 func (x *U128) diffusion() {
 	hi, lo := x.longView()
 
+	t := *lo
+
 	*hi = diffusionUint64(*hi)
 	*lo = diffusionUint64(*lo)
+
+	*hi ^= t
 }
 
 func (x *U128) xor(y *U128) {
@@ -213,11 +217,13 @@ func (st *StateU128) doEncrypt(x U128) U128 {
 	state := x
 
 	state.diffusion()
-	state.permuteSubstitute(&st.P, &st.S)
+	state.permute(&st.P)
+	state.substitute(&st.S)
 	state.xor(&st.Keys[0])
 
 	state.diffusion()
-	state.permuteSubstitute(&st.P, &st.S)
+	state.permute(&st.P)
+	state.substitute(&st.S)
 	state.xor(&st.Keys[1])
 
 	return state
@@ -228,11 +234,13 @@ func (st *StateU128) doDecrypt(x U128) U128 {
 	state := x
 
 	state.xor(&st.Keys[1])
-	state.invPermuteSubstitute(&st.invP, &st.invS)
+	state.invSubstitute(&st.invS)
+	state.invPermute(&st.invP)
 	state.diffusion()
 
 	state.xor(&st.Keys[0])
-	state.invPermuteSubstitute(&st.invP, &st.invS)
+	state.invSubstitute(&st.invS)
+	state.invPermute(&st.invP)
 	state.diffusion()
 
 	return state

@@ -31,7 +31,8 @@ func (key *U256) expand(P32 [32]int, S [256]byte, noRounds int) []U256 {
 		*m2 <<= i
 		*m1 <<= i
 
-		newKey.permuteSubstitute(&P32, &S)
+		newKey.permute(&P32)
+		newKey.substitute(&S)
 		keys = append(keys, newKey)
 	}
 
@@ -81,32 +82,38 @@ func (key *U256) bootstrap() StateU256 {
 
 }
 
-func (a *U256) permuteSubstitute(P32 *[32]int, S *[256]byte) {
+func (a *U256) permute(P32 *[32]int) {
 	var result U256
 
 	for i := 0; i < 32; i++ {
 		result[i] = a[P32[i]]
 	}
 
-	for i := 0; i < 32; i++ {
-		result[i] = S[result[i]]
-	}
-
 	*a = result
 }
 
-func (a *U256) invPermuteSubstitute(invP32 *[32]int, invS *[256]byte) {
+func (a *U256) substitute(S *[256]byte) {
+	for i := 0; i < 16; i++ {
+		a[i] = S[a[i]]
+	}
+
+}
+
+func (a *U256) invPermute(invP32 *[32]int) {
 	var result U256
 
 	for i := 0; i < 32; i++ {
 		result[i] = a[invP32[i]]
 	}
 
-	for i := 0; i < 32; i++ {
-		result[i] = invS[result[i]]
+	*a = result
+}
+
+func (a *U256) invSubstitute(invS *[256]byte) {
+	for i := 0; i < 16; i++ {
+		a[i] = invS[a[i]]
 	}
 
-	*a = result
 }
 
 func randomStringU256() string {
@@ -133,10 +140,20 @@ func (x *U256) xor(y *U256) {
 func (x *U256) diffusion() {
 	hi, m2, m1, lo := x.longView()
 
+	c2 := *m2
+	c3 := *m1
+	c4 := *lo
+
 	*hi = diffusionUint64(*hi)
 	*m2 = diffusionUint64(*m2)
 	*m1 = diffusionUint64(*m1)
 	*lo = diffusionUint64(*lo)
+
+	*hi ^= c2
+	*m1 ^= c4
+
+	*hi ^= c3
+	*m2 ^= c4
 }
 
 func (st *StateU256) doEncrypt(x U256) U256 {
@@ -144,15 +161,18 @@ func (st *StateU256) doEncrypt(x U256) U256 {
 	state := x
 
 	state.diffusion()
-	state.permuteSubstitute(&st.P32, &st.S)
+	state.permute(&st.P32)
+	state.substitute(&st.S)
 	state.xor(&st.Keys[0])
 
 	state.diffusion()
-	state.permuteSubstitute(&st.P32, &st.S)
+	state.permute(&st.P32)
+	state.substitute(&st.S)
 	state.xor(&st.Keys[1])
 
 	state.diffusion()
-	state.permuteSubstitute(&st.P32, &st.S)
+	state.permute(&st.P32)
+	state.substitute(&st.S)
 	state.xor(&st.Keys[2])
 
 	return state
@@ -163,15 +183,18 @@ func (st *StateU256) doDecrypt(x U256) U256 {
 	state := x
 
 	state.xor(&st.Keys[2])
-	state.invPermuteSubstitute(&st.invP32, &st.invS)
+	state.invSubstitute(&st.invS)
+	state.invPermute(&st.invP32)
 	state.diffusion()
 
 	state.xor(&st.Keys[1])
-	state.invPermuteSubstitute(&st.invP32, &st.invS)
+	state.invSubstitute(&st.invS)
+	state.invPermute(&st.invP32)
 	state.diffusion()
 
 	state.xor(&st.Keys[0])
-	state.invPermuteSubstitute(&st.invP32, &st.invS)
+	state.invSubstitute(&st.invS)
+	state.invPermute(&st.invP32)
 	state.diffusion()
 
 	return state
