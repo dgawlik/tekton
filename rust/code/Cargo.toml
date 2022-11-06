@@ -12,3 +12,6 @@ aes = "0.8.2"
 [lib]
 name = "tekton"
 path = "src/lib.rs"
+
+[profile.release]
+debug = 1
