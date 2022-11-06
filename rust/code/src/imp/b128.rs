@@ -1,22 +1,13 @@
-use std::simd::{self};
+use std::simd::Simd;
+use std::simd;
 
 #[allow(unused)]
 use rand::{Rng};
 
-use std::simd::Simd;
+use super::primitives;
 
 
-#[inline]
-fn diffusion(a: Simd<u8, 16>) -> Simd<u8, 16>{
 
-    let a2: Simd<u8, 16> = a.rotate_lanes_left::<1>();
-
-    let p1 = (a2 & M1) << SH1;
-    let p2 = (a2 & M2) << SH2;
-    let p3 = (a2 & M3) << SH3;
-
-    return a ^ p1 ^ p2 ^ p3;
-}
 
 const P: [usize; 16] = [3, 7, 13, 0, 11, 1, 15, 2, 4, 12, 5, 9, 6, 8, 14, 10];
 const INV_P: [usize; 16] = [3, 5, 7, 0, 8, 10, 12, 1, 13, 11, 15, 4, 9, 2, 14, 6];
@@ -32,41 +23,6 @@ const SH1: Simd<u8, 16> = simd::u8x16::from_array([1; 16]);
 const SH2: Simd<u8, 16> = simd::u8x16::from_array([2; 16]);
 const SH3: Simd<u8, 16> = simd::u8x16::from_array([4; 16]);
 
-
-#[inline]
-fn permute(a: Simd<u8, 16>) -> Simd<u8, 16>{
-    return simd::simd_swizzle!(a, P);
-}
-
-#[inline]
-fn rotate(a: Simd<u8, 16>) -> Simd<u8, 16>{
-    return a.rotate_lanes_left::<5>();
-}
-
-#[inline]
-fn inverse_rotate(a: Simd<u8, 16>) -> Simd<u8, 16>{
-    return a.rotate_lanes_right::<5>();
-}
-
-#[inline]
-fn inverse_permute(a: Simd<u8, 16>) -> Simd<u8, 16>{
-    return simd::simd_swizzle!(a, INV_P);
-}
-
-#[inline]
-fn substitute(a: Simd<u8, 16>) -> Simd<u8, 16> {
-    return a * S;
-}
-
-#[inline]
-fn inverse_substitute(a: Simd<u8, 16>) -> Simd<u8, 16>{
-    return a * INV_S;
-}
-
-#[inline]
-fn xor_with(a: Simd<u8, 16>, k: Simd<u8, 16>) -> Simd<u8, 16> {
-   return a ^ k;
-}
 
 
 pub struct Tekton128 {
@@ -94,30 +50,30 @@ impl Tekton128 {
     pub fn encrypt(&self, payload: &mut [u8; 16]){
 
         let mut state = simd::u8x16::from_array(*payload);
-        state = xor_with(state, simd::u8x16::from_array(self.keys[0]));
-        state = diffusion(state);
-        state = substitute(state);
-        state = permute(state);
+        state ^= simd::u8x16::from_array(self.keys[0]);
+        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
+        state = primitives::substitute!(state, S);
+        state = primitives::permute!(state, P);
        
-        state = xor_with(state, simd::u8x16::from_array(self.keys[1]));
-        state = diffusion(state);
-        state = substitute(state);
-        state = rotate(state);
+        state ^= simd::u8x16::from_array(self.keys[1]);
+        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
+        state = primitives::substitute!(state, S);
+        state = primitives::rotate(state);
 
-        state = xor_with(state, simd::u8x16::from_array(self.keys[2]));
-        state = diffusion(state);
-        state = substitute(state);
-        state = rotate(state);
+        state ^= simd::u8x16::from_array(self.keys[2]);
+        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
+        state = primitives::substitute!(state, S);
+        state = primitives::rotate(state);
 
-        state = xor_with(state, simd::u8x16::from_array(self.keys[3]));
-        state = diffusion(state);
-        state = substitute(state);
-        state = rotate(state);
+        state ^= simd::u8x16::from_array(self.keys[3]);
+        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
+        state = primitives::substitute!(state, S);
+        state = primitives::rotate(state);
 
-        state = xor_with(state, simd::u8x16::from_array(self.keys[4]));
-        state = diffusion(state);
-        state = substitute(state);
-        state = rotate(state);
+        state ^= simd::u8x16::from_array(self.keys[4]);
+        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
+        state = primitives::substitute!(state, S);
+        state = primitives::rotate(state);
 
         *payload = *state.as_array();
     }
@@ -125,31 +81,31 @@ impl Tekton128 {
     #[inline]
     pub fn decrypt(&self, cipher: &mut [u8; 16]){
         let mut state = simd::u8x16::from_array(*cipher);
-        state = inverse_rotate(state);
-        state = inverse_substitute(state);
-        state = diffusion(state);
-        state = xor_with(state, simd::u8x16::from_array(self.keys[4]));
+        state = primitives::inverse_rotate(state);
+        state = primitives::substitute!(state, INV_S);
+        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
+        state ^= simd::u8x16::from_array(self.keys[4]);
       
 
-        state = inverse_rotate(state);
-        state = inverse_substitute(state);
-        state = diffusion(state);
-        state = xor_with(state, simd::u8x16::from_array(self.keys[3]));
+        state = primitives::inverse_rotate(state);
+        state = primitives::substitute!(state, INV_S);
+        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
+        state ^= simd::u8x16::from_array(self.keys[3]);
 
-        state = inverse_rotate(state);
-        state = inverse_substitute(state);
-        state = diffusion(state);
-        state = xor_with(state, simd::u8x16::from_array(self.keys[2]));
+        state = primitives::inverse_rotate(state);
+        state = primitives::substitute!(state, INV_S);
+        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
+        state ^= simd::u8x16::from_array(self.keys[2]);
 
-        state = inverse_rotate(state);
-        state = inverse_substitute(state);
-        state = diffusion(state);
-        state = xor_with(state, simd::u8x16::from_array(self.keys[1]));
+        state = primitives::inverse_rotate(state);
+        state = primitives::substitute!(state, INV_S);
+        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
+        state ^= simd::u8x16::from_array(self.keys[1]);
 
-        state = inverse_permute(state);
-        state = inverse_substitute(state);
-        state = diffusion(state);
-        state = xor_with(state, simd::u8x16::from_array(self.keys[0]));
+        state = primitives::permute!(state, INV_P);
+        state = primitives::substitute!(state, INV_S);
+        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
+        state ^= simd::u8x16::from_array(self.keys[0]);
 
         *cipher = *state.as_array()
     }
