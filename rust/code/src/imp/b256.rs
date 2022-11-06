@@ -4,11 +4,12 @@ use std::simd;
 #[allow(unused)]
 use rand::{Rng};
 
-use super::primitives;
+use super::primitives::{self, permute};
 
 
 
-
+const P: [usize; 32] = [18, 20, 4, 22, 21, 1, 11, 16, 5, 9, 19, 10, 15, 24, 6, 23, 28, 31, 7, 27, 12, 13, 17, 26, 30, 3, 25, 2, 8, 14, 0, 29];
+const INV_P: [usize; 32] = [30, 5, 27, 25, 2, 8, 14, 18, 28, 9, 11, 6, 20, 21, 29, 12, 7, 22, 0, 10, 1, 4, 3, 15, 13, 26, 23, 19, 16, 31, 24, 17];
 
 const S: Simd<u8, 32> = simd::u8x32::from_array([113; 32]);
 const INV_S: Simd<u8, 32> = simd::u8x32::from_array([145; 32]);
@@ -48,6 +49,7 @@ impl Tekton256 {
     pub fn encrypt(&self, payload: &mut [u8; 32]){
 
         let mut state = simd::u8x32::from_array(*payload);
+        state = permute!(state, P);
         state ^= simd::u8x32::from_array(self.keys[0]);
         state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
         state = primitives::substitute!(state, S);
@@ -104,6 +106,7 @@ impl Tekton256 {
         state = primitives::substitute!(state, INV_S);
         state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
         state ^= simd::u8x32::from_array(self.keys[0]);
+        state = permute!(state, INV_P);
 
         *cipher = *state.as_array()
     }
