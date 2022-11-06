@@ -24,8 +24,10 @@ fn test_tekton128_performance(){
 
     let start = Instant::now();
     for _ in 0..1_000_000 {
-        tekton.encrypt(&mut pb);
-        tekton.decrypt(&mut pb);
+        let mut enc = pb.clone();
+        tekton.encrypt(&mut enc);
+        let mut dec = enc.clone();
+        tekton.decrypt(&mut dec);
     }
     let duration = start.elapsed();
 
