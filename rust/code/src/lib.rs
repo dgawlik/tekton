@@ -132,22 +132,22 @@ pub mod b128 {
             state = xor_with(state, simd::u8x16::from_array(self.keys[1]));
             state = diffusion(state);
             state = substitute(state);
-            state = rotate(state);
+            state = permute(state);
 
             state = xor_with(state, simd::u8x16::from_array(self.keys[2]));
             state = diffusion(state);
             state = substitute(state);
-            state = rotate(state);
+            state = permute(state);
 
             state = xor_with(state, simd::u8x16::from_array(self.keys[3]));
             state = diffusion(state);
             state = substitute(state);
-            state = rotate(state);
+            state = permute(state);
 
             state = xor_with(state, simd::u8x16::from_array(self.keys[4]));
             state = diffusion(state);
             state = substitute(state);
-            state = rotate(state);
+            state = permute(state);
 
             *payload = *state.as_array();
         }
@@ -155,23 +155,23 @@ pub mod b128 {
         #[inline]
         pub fn decrypt(&self, cipher: &mut [u8; 16]){
             let mut state = simd::u8x16::from_array(*cipher);
-            state = inverse_rotate(state);
+            state = inverse_permute(state);
             state = inverse_substitute(state);
             state = diffusion(state);
             state = xor_with(state, simd::u8x16::from_array(self.keys[4]));
           
 
-            state = inverse_rotate(state);
+            state = inverse_permute(state);
             state = inverse_substitute(state);
             state = diffusion(state);
             state = xor_with(state, simd::u8x16::from_array(self.keys[3]));
 
-            state = inverse_rotate(state);
+            state = inverse_permute(state);
             state = inverse_substitute(state);
             state = diffusion(state);
             state = xor_with(state, simd::u8x16::from_array(self.keys[2]));
 
-            state = inverse_rotate(state);
+            state = inverse_permute(state);
             state = inverse_substitute(state);
             state = diffusion(state);
             state = xor_with(state, simd::u8x16::from_array(self.keys[1]));
