@@ -1,6 +1,6 @@
 #![feature(portable_simd)]
 
-use tekton::b128::Tekton128;
+use tekton::imp::b128::Tekton128;
 
 use std::time::{Instant};
 use rand::{Rng};
