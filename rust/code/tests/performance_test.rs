@@ -19,15 +19,22 @@ fn test_tekton128_performance(){
 
     let tekton = Tekton128::new(key.to_be_bytes());
 
-    let p: u128 = rand::thread_rng().gen();
-    let mut pb = p.to_be_bytes();
+    let mut payload: [[u8; 16]; 1_000_000] = [[0; 16]; 1_000_000];
+
+    for i in 0..1_000_000 {
+        payload[i] = rand::thread_rng().gen::<u128>().to_be_bytes();
+    }
+
+    let mut enc: [[u8; 16]; 1_000_000] = [[0; 16]; 1_000_000];
+    let mut dec: [[u8; 16]; 1_000_000] = [[0; 16]; 1_000_000];
+
 
     let start = Instant::now();
-    for _ in 0..1_000_000 {
-        let mut enc = pb.clone();
-        tekton.encrypt(&mut enc);
-        let mut dec = enc.clone();
-        tekton.decrypt(&mut dec);
+    for i in 0..1_000_000 {
+        enc[i] = payload[i];
+        tekton.encrypt(&mut enc[i]);
+        dec[i] = enc[i];
+        tekton.decrypt(&mut dec[i]);
     }
     let duration = start.elapsed();
 
