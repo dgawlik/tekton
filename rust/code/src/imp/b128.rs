@@ -1,35 +1,10 @@
 use std::simd::{self};
+
+#[allow(unused)]
 use rand::{Rng};
+
 use std::simd::Simd;
 
-// fn gcd_extended(a: u16, b:u16, x: &mut u16, y: &mut u16) -> u16{
-//     if a == 0 {
-//         *x = 0_u16;
-//         *y = 1_u16;
-//         return b;
-//     }
-//     else {
-//         let mut x1: u16 = 0_u16;
-//         let mut y1: u16 = 0_u16;
-
-//         let gcd = gcd_extended(b % a, a, &mut x1, &mut y1);
-
-//         *x = y1.wrapping_sub((b/a).wrapping_mul(x1));
-//         *y = x1;
-
-//         return gcd;
-//     }
-// }
-
-// fn mod_inverse(a: u8) -> u8 {
-//     let M = 256_u16;
-
-//     let mut x: u16 = 0;
-//     let mut y: u16 = 0;
-
-//     gcd_extended(a.into(), M, &mut x, &mut y);
-//     return (((x % M) + M) % M).to_be_bytes()[1];
-// }
 
 #[inline]
 fn diffusion(a: Simd<u8, 16>) -> Simd<u8, 16>{
@@ -180,68 +155,6 @@ impl Tekton128 {
     }
 }
 
-
-// #[test]
-// fn test_mod_inverse(){
-// let a: u8 = 113;
-// let inv_a = mod_inverse(a);
-
-// assert_eq!(1, a.wrapping_mul(inv_a));
-// }
-
-// #[test]
-// fn test_diffusion(){
-//     let n: u128 = rand::thread_rng().gen();
-//     let diff_n = diffusion(n);
-//     let diff2_n = diffusion(diff_n);
-
-//     assert_eq!(diff2_n, n);
-//     assert_ne!(n, diff_n);
-// }
-
-// #[test]
-// fn test_print_inverse_permutation(){
-//     let mut n: [usize; 16] = [0; 16];
-//     for i in 0..16 {
-//         n[P[i]] = i;
-//     }
-//     return println!("{:?}", n);
-// }
-
-// #[test]
-// fn test_print_inverse_substitution(){
-//     return println!("{:?}", mod_inverse(113));
-// }
-
-// #[test]
-// fn test_permute(){
-//     let n: u128 = rand::thread_rng().gen();
-//     let nb = n.to_be_bytes();
-    
-//     let mut nbp = nb.clone();
-//     permute(&mut nbp);
-
-//     let mut n2b = nbp.clone();
-//     inverse_permute(&mut n2b);
-
-//     assert_eq!(n2b, nb);
-//     assert_ne!(nbp ,nb);
-// }
-
-// #[test]
-// fn test_substitute(){
-//     let n: u128 = rand::thread_rng().gen();
-//     let nb = n.to_be_bytes();
-    
-//     let mut nsb = nb.clone();
-//     substitute(&mut nsb);
-
-//     let mut n2b = nsb.clone();
-//     inverse_substitute(&mut n2b);
-
-//     assert_eq!(n2b, nb);
-//     assert_ne!(nsb ,nb);
-// }
 
 #[test]
 fn test_encrypt_decrypt(){
