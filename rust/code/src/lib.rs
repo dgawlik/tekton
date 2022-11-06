@@ -69,6 +69,16 @@ pub mod b128 {
     }
 
     #[inline]
+    fn rotate(a: &mut Simd<u8, 16>){
+        *a = a.rotate_lanes_left::<5>();
+    }
+
+    #[inline]
+    fn inverse_rotate(a: &mut Simd<u8, 16>){
+        *a = a.rotate_lanes_right::<5>();
+    }
+
+    #[inline]
     fn inverse_permute(a: &mut Simd<u8, 16>){
         *a = simd::simd_swizzle!(*a, INV_P);
     }
@@ -115,47 +125,57 @@ pub mod b128 {
             let mut state = simd::u8x16::from_array(*payload);
             xor_with(&mut state, &mut simd::u8x16::from_array(self.keys[0]));
             diffusion(&mut state);
+            substitute(&mut state);
             permute(&mut state);
            
             xor_with(&mut state, &mut simd::u8x16::from_array(self.keys[1]));
             diffusion(&mut state);
             substitute(&mut state);
+            rotate(&mut state);
 
             xor_with(&mut state, &mut simd::u8x16::from_array(self.keys[2]));
             diffusion(&mut state);
-            permute(&mut state);
+            substitute(&mut state);
+            rotate(&mut state);
 
             xor_with(&mut state, &mut simd::u8x16::from_array(self.keys[3]));
             diffusion(&mut state);
             substitute(&mut state);
+            rotate(&mut state);
 
             xor_with(&mut state, &mut simd::u8x16::from_array(self.keys[4]));
             diffusion(&mut state);
-            permute(&mut state);
+            substitute(&mut state);
+            rotate(&mut state);
 
             *payload = *state.as_array();
         }
 
         pub fn decrypt(&self, cipher: &mut [u8; 16]){
             let mut state = simd::u8x16::from_array(*cipher);
-            inverse_permute(&mut state);
+            inverse_rotate(&mut state);
+            inverse_substitute(&mut state);
             diffusion(&mut state);
             xor_with(&mut state, &mut simd::u8x16::from_array(self.keys[4]));
           
 
+            inverse_rotate(&mut state);
             inverse_substitute(&mut state);
             diffusion(&mut state);
             xor_with(&mut state, &mut simd::u8x16::from_array(self.keys[3]));
 
-            inverse_permute(&mut state);
+            inverse_rotate(&mut state);
+            inverse_substitute(&mut state);
             diffusion(&mut state);
             xor_with(&mut state, &mut simd::u8x16::from_array(self.keys[2]));
 
+            inverse_rotate(&mut state);
             inverse_substitute(&mut state);
             diffusion(&mut state);
             xor_with(&mut state, &mut simd::u8x16::from_array(self.keys[1]));
 
             inverse_permute(&mut state);
+            inverse_substitute(&mut state);
             diffusion(&mut state);
             xor_with(&mut state, &mut simd::u8x16::from_array(self.keys[0]));
 
