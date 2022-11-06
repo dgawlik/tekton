@@ -1,22 +1,26 @@
-use std::simd::Simd;
+use std::simd::{Simd, LaneCount, SupportedLaneCount};
 
 
 #[inline]
-pub fn rotate(a: Simd<u8, 16>) -> Simd<u8, 16>{
+pub fn rotate<const L: usize>(a: Simd<u8, L>) -> Simd<u8, L>
+where LaneCount<L>: SupportedLaneCount{
     return a.rotate_lanes_left::<5>();
 }
 
 #[inline]
-pub fn inverse_rotate(a: Simd<u8, 16>) -> Simd<u8, 16>{
+pub fn inverse_rotate<const L: usize>(a: Simd<u8, L>) -> Simd<u8, L>
+where LaneCount<L>: SupportedLaneCount{
     return a.rotate_lanes_right::<5>();
 }
 
-#[inline]
-pub fn diffusion(a: Simd<u8, 16>, 
-    m1: Simd<u8, 16>, m2:Simd<u8, 16>, m3:Simd<u8,16>,
-    sh1: Simd<u8, 16>, sh2:Simd<u8, 16>, sh3:Simd<u8,16>,) -> Simd<u8, 16>{
 
-    let a2: Simd<u8, 16> = a.rotate_lanes_left::<1>();
+#[inline]
+pub fn diffusion<const L: usize>(a: Simd<u8, L>, 
+    m1: Simd<u8, L>, m2:Simd<u8, L>, m3:Simd<u8,L>,
+    sh1: Simd<u8, L>, sh2:Simd<u8, L>, sh3:Simd<u8,L>,) -> Simd<u8, L>
+    where LaneCount<L>: SupportedLaneCount{
+
+    let a2: Simd<u8, L> = a.rotate_lanes_left::<1>();
 
     let p1 = (a2 & m1) << sh1;
     let p2 = (a2 & m2) << sh2;
