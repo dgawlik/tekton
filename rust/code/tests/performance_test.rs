@@ -38,6 +38,8 @@ fn test_tekton128_performance(){
     }
     let duration = start.elapsed();
 
+    let a = dec[999999][0];
+    println!("{0}", a);
     println!("Tekton 128bit: 1M nonces: {0:?}", duration);
 
 }
