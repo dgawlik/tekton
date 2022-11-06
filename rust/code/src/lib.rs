@@ -120,6 +120,7 @@ pub mod b128 {
             }
         }
 
+        #[inline]
         pub fn encrypt(&self, payload: &mut [u8; 16]){
 
             let mut state = simd::u8x16::from_array(*payload);
@@ -151,6 +152,7 @@ pub mod b128 {
             *payload = *state.as_array();
         }
 
+        #[inline]
         pub fn decrypt(&self, cipher: &mut [u8; 16]){
             let mut state = simd::u8x16::from_array(*cipher);
             state = inverse_rotate(state);
