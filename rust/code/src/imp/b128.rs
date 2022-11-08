@@ -4,34 +4,53 @@ use std::simd;
 #[allow(unused)]
 use rand::{Rng};
 
-use super::primitives;
+use super::primitives::{self, Permute};
 
+
+// i32 prime: 112_012_097 <-> 1_347_249_345
+// i16 prime: 30_011 <-> 39_923
 
 
 
 const P: [usize; 16] = [3, 7, 13, 0, 11, 1, 15, 2, 4, 12, 5, 9, 6, 8, 14, 10];
 const INV_P: [usize; 16] = [3, 5, 7, 0, 8, 10, 12, 1, 13, 11, 15, 4, 9, 2, 14, 6];
+const PI: [usize; 4] = [1,3,0,2];
+const INV_PI: [usize; 4] = [2,0,3,1];
 
 const S: Simd<u8, 16> = simd::u8x16::from_array([113; 16]);
 const INV_S: Simd<u8, 16> = simd::u8x16::from_array([145; 16]);
+
+const SI: Simd<u32, 4> = simd::u32x4::from_array([1_347_249_345; 4]);
+const INV_SI: Simd<u32, 4> = simd::u32x4::from_array([112_012_097; 4]);
 
 const M1: Simd<u8, 16> = simd::u8x16::from_array([0b01010101; 16]);
 const M2: Simd<u8, 16> = simd::u8x16::from_array([0b00110011; 16]);
 const M3: Simd<u8, 16> = simd::u8x16::from_array([0b00001111; 16]);
 
+const M1I: Simd<u32, 4> = simd::u32x4::from_array([0b01010101_01010101_01010101_01010101; 4]);
+const M2I: Simd<u32, 4> = simd::u32x4::from_array([0b00110011_00110011_00110011_00110011; 4]);
+const M3I: Simd<u32, 4> = simd::u32x4::from_array([0b00001111_00001111_00001111_00001111; 4]);
+const M4I: Simd<u32, 4> = simd::u32x4::from_array([0b00000000_11111111_00000000_11111111; 4]);
+const M5I: Simd<u32, 4> = simd::u32x4::from_array([0b00000000_00000000_11111111_11111111; 4]);
+
 const SH1: Simd<u8, 16> = simd::u8x16::from_array([1; 16]);
 const SH2: Simd<u8, 16> = simd::u8x16::from_array([2; 16]);
 const SH3: Simd<u8, 16> = simd::u8x16::from_array([4; 16]);
 
-
+const SH1I: Simd<u32, 4> = simd::u32x4::from_array([1; 4]);
+const SH2I: Simd<u32, 4> = simd::u32x4::from_array([2; 4]);
+const SH3I: Simd<u32, 4> = simd::u32x4::from_array([4; 4]);
+const SH4I: Simd<u32, 4> = simd::u32x4::from_array([8; 4]);
+const SH5I: Simd<u32, 4> = simd::u32x4::from_array([16; 4]);
 
 pub struct Tekton128 {
     keys: [[u8; 16]; 5],
+    flags: primitives::Flags
 }
 
 impl Tekton128 {
 
-    pub fn new(key: [u8; 16]) -> Tekton128{
+    pub fn new(key: [u8; 16], flags: primitives::Flags) -> Tekton128{
 
         let mut keys: [[u8; 16]; 5] = [[0; 16]; 5];
 
@@ -42,72 +61,138 @@ impl Tekton128 {
         }
 
         return Tekton128 {
-            keys
+            keys,
+            flags
         }
+    }
+
+    #[inline]
+    pub fn encrypt_round_b(&self, state: Simd<u8, 16>, i: usize, mode: &Permute) -> Simd<u8, 16>{
+        let mut s = state;
+        s ^= simd::u8x16::from_array(self.keys[i]);
+        s = primitives::diffusion_byte(s, M1, M2, M3, SH1, SH2, SH3);
+        s = primitives::substitute!(s, S);
+        s = if *mode == Permute::PERMUTE {
+            primitives::permute!(s, P)
+        }
+        else {
+            primitives::rotate_byte(s)
+        };
+        s
+    }
+
+    #[inline]
+    pub fn decrypt_round_b(&self, state: Simd<u8, 16>, i: usize, mode: &Permute) -> Simd<u8, 16>{
+        let mut s = state;
+        s = if *mode == Permute::PERMUTE {
+            primitives::permute!(s, INV_P)
+        }
+        else {
+            primitives::inverse_rotate_byte(s)
+        };
+        s = primitives::substitute!(s, INV_S);
+        s = primitives::diffusion_byte(s, M1, M2, M3, SH1, SH2, SH3);
+        s ^= simd::u8x16::from_array(self.keys[i]);
+        s
+    }
+
+    #[inline]
+    pub fn encrypt_round_i(&self, state: Simd<u32, 4>, i: usize, mode: &Permute) -> Simd<u32, 4>{
+        let mut s = state;
+        let key = unsafe {
+            std::mem::transmute::<[u8; 16], [u32; 4]>(self.keys[i])
+        };
+
+        s ^= simd::u32x4::from_array(key);
+        s = primitives::diffusion_int(s, M1I, M2I, M3I, M4I, M5I, SH1I, SH2I, SH3I, SH4I, SH5I);
+        s = primitives::substitute!(s, SI);
+        s = if *mode == Permute::PERMUTE {
+            primitives::permute!(s, PI)
+        }
+        else {
+            primitives::rotate_int(s)
+        };
+        s
+    }
+
+    #[inline]
+    pub fn decrypt_round_i(&self, state: Simd<u32, 4>, i: usize, mode: &Permute) -> Simd<u32, 4>{
+        let mut s = state;
+        let key = unsafe {
+            std::mem::transmute::<[u8; 16], [u32; 4]>(self.keys[i])
+        };
+
+        s = if *mode == Permute::PERMUTE {
+            primitives::permute!(s, INV_PI)
+        }
+        else {
+            primitives::inverse_rotate_int(s)
+        };
+        s = primitives::substitute!(s, INV_SI);
+        s = primitives::diffusion_int(s, M1I, M2I, M3I, M4I, M5I, SH1I, SH2I, SH3I, SH4I, SH5I);
+        s ^= simd::u32x4::from_array(key);
+        s
     }
 
     #[inline]
     pub fn encrypt(&self, payload: &mut [u8; 16]){
 
-        let mut state = simd::u8x16::from_array(*payload);
-        state ^= simd::u8x16::from_array(self.keys[0]);
-        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
-        state = primitives::substitute!(state, S);
-        state = primitives::permute!(state, P);
-       
-        state ^= simd::u8x16::from_array(self.keys[1]);
-        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
-        state = primitives::substitute!(state, S);
-        state = primitives::rotate(state);
+        if self.flags.mode == primitives::Mode::BYTE {
 
-        state ^= simd::u8x16::from_array(self.keys[2]);
-        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
-        state = primitives::substitute!(state, S);
-        state = primitives::rotate(state);
+            let mut state = simd::u8x16::from_array(*payload);
+            state = self.encrypt_round_b(state, 0, &self.flags.permute);
+            state = self.encrypt_round_b(state, 1, &self.flags.permute);
+            state = self.encrypt_round_b(state, 2, &self.flags.permute);
+            state = self.encrypt_round_b(state, 3, &self.flags.permute);
+            state = self.encrypt_round_b(state, 4, &self.flags.permute);
+            *payload = *state.as_array();
+        }
+        else {
+            let payload_i = unsafe {
+                std::mem::transmute::<[u8; 16], [u32; 4]>(*payload)
+            };
+         
+            let mut state = simd::u32x4::from_array(payload_i);
+            state = self.encrypt_round_i(state, 0, &self.flags.permute);
+            state = self.encrypt_round_i(state, 1, &self.flags.permute);
+            state = self.encrypt_round_i(state, 2, &self.flags.permute);
+            state = self.encrypt_round_i(state, 3, &self.flags.permute);
+            state = self.encrypt_round_i(state, 4, &self.flags.permute);
 
-        state ^= simd::u8x16::from_array(self.keys[3]);
-        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
-        state = primitives::substitute!(state, S);
-        state = primitives::rotate(state);
-
-        state ^= simd::u8x16::from_array(self.keys[4]);
-        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
-        state = primitives::substitute!(state, S);
-        state = primitives::rotate(state);
-
-        *payload = *state.as_array();
+            *payload = unsafe {
+                std::mem::transmute::<[u32; 4], [u8; 16]>(*state.as_array())
+            };
+        }
     }
 
     #[inline]
     pub fn decrypt(&self, cipher: &mut [u8; 16]){
-        let mut state = simd::u8x16::from_array(*cipher);
-        state = primitives::inverse_rotate(state);
-        state = primitives::substitute!(state, INV_S);
-        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
-        state ^= simd::u8x16::from_array(self.keys[4]);
-      
+        if self.flags.mode == primitives::Mode::BYTE {
 
-        state = primitives::inverse_rotate(state);
-        state = primitives::substitute!(state, INV_S);
-        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
-        state ^= simd::u8x16::from_array(self.keys[3]);
+            let mut state = simd::u8x16::from_array(*cipher);
+            state = self.decrypt_round_b(state, 4, &self.flags.permute);
+            state = self.decrypt_round_b(state, 3, &self.flags.permute);
+            state = self.decrypt_round_b(state, 2, &self.flags.permute);
+            state = self.decrypt_round_b(state, 1, &self.flags.permute);
+            state = self.decrypt_round_b(state, 0, &self.flags.permute);
+            *cipher = *state.as_array();
+        }
+        else {
+            let payload_i = unsafe {
+                std::mem::transmute::<[u8; 16], [u32; 4]>(*cipher)
+            };
+         
+            let mut state = simd::u32x4::from_array(payload_i);
+            state = self.decrypt_round_i(state, 4, &self.flags.permute);
+            state = self.decrypt_round_i(state, 3, &self.flags.permute);
+            state = self.decrypt_round_i(state, 2, &self.flags.permute);
+            state = self.decrypt_round_i(state, 1, &self.flags.permute);
+            state = self.decrypt_round_i(state, 0, &self.flags.permute);
 
-        state = primitives::inverse_rotate(state);
-        state = primitives::substitute!(state, INV_S);
-        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
-        state ^= simd::u8x16::from_array(self.keys[2]);
-
-        state = primitives::inverse_rotate(state);
-        state = primitives::substitute!(state, INV_S);
-        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
-        state ^= simd::u8x16::from_array(self.keys[1]);
-
-        state = primitives::permute!(state, INV_P);
-        state = primitives::substitute!(state, INV_S);
-        state = primitives::diffusion(state, M1, M2, M3, SH1, SH2, SH3);
-        state ^= simd::u8x16::from_array(self.keys[0]);
-
-        *cipher = *state.as_array()
+            *cipher = unsafe {
+                std::mem::transmute::<[u32; 4], [u8; 16]>(*state.as_array())
+            };
+        }
     }
 }
 
@@ -116,19 +201,46 @@ impl Tekton128 {
 fn test_encrypt_decrypt(){
     let key: u128 = rand::thread_rng().gen();
 
-    let tekton = Tekton128::new(key.to_be_bytes());
 
-    for _ in 0..1000 {
-        let p: u128 = rand::thread_rng().gen();
-        let pb = p.to_be_bytes();
+    let test_in_loop = |tekton: Tekton128| {
+        for _ in 0..1000 {
+            let p: u128 = rand::thread_rng().gen();
+            let pb = p.to_be_bytes();
+    
+            let mut enc = pb.clone();
+            tekton.encrypt(&mut enc);
+    
+            let mut dec = enc.clone();
+            tekton.decrypt(&mut dec);
+    
+            assert_eq!(dec, pb);
+            assert_ne!(enc, pb);
+        }
+    };
 
-        let mut enc = pb.clone();
-        tekton.encrypt(&mut enc);
+    test_in_loop(
+        Tekton128::new(key.to_be_bytes(), 
+        primitives::Flags {
+            permute: primitives::Permute::PERMUTE, 
+            mode: primitives::Mode::BYTE}));
 
-        let mut dec = enc.clone();
-        tekton.decrypt(&mut dec);
+    test_in_loop(
+        Tekton128::new(key.to_be_bytes(), 
+        primitives::Flags {
+            permute: primitives::Permute::ROTATE, 
+            mode: primitives::Mode::BYTE}));
 
-        assert_eq!(dec, pb);
-        assert_ne!(enc, pb);
-    }
+    test_in_loop(
+        Tekton128::new(key.to_be_bytes(), 
+        primitives::Flags {
+            permute: primitives::Permute::PERMUTE, 
+            mode: primitives::Mode::INT}));
+
+    test_in_loop(
+        Tekton128::new(key.to_be_bytes(), 
+        primitives::Flags {
+            permute: primitives::Permute::ROTATE, 
+            mode: primitives::Mode::INT}));
+
+    
 }
