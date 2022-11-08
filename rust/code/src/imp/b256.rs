@@ -145,6 +145,9 @@ impl Tekton256 {
             state = self.encrypt_round_b(state, 2, &self.flags.permute);
             state = self.encrypt_round_b(state, 3, &self.flags.permute);
             state = self.encrypt_round_b(state, 4, &self.flags.permute);
+            state = self.encrypt_round_b(state, 5, &self.flags.permute);
+            state = self.encrypt_round_b(state, 6, &self.flags.permute);
+            state = self.encrypt_round_b(state, 7, &self.flags.permute);
             *payload = *state.as_array();
         }
         else {
@@ -158,6 +161,9 @@ impl Tekton256 {
             state = self.encrypt_round_i(state, 2, &self.flags.permute);
             state = self.encrypt_round_i(state, 3, &self.flags.permute);
             state = self.encrypt_round_i(state, 4, &self.flags.permute);
+            state = self.encrypt_round_i(state, 5, &self.flags.permute);
+            state = self.encrypt_round_i(state, 6, &self.flags.permute);
+            state = self.encrypt_round_i(state, 7, &self.flags.permute);
 
             *payload = unsafe {
                 std::mem::transmute::<[u32; 8], [u8; 32]>(*state.as_array())
@@ -170,6 +176,9 @@ impl Tekton256 {
         if self.flags.mode == primitives::Mode::BYTE {
 
             let mut state = simd::u8x32::from_array(*cipher);
+            state = self.decrypt_round_b(state, 7, &self.flags.permute);
+            state = self.decrypt_round_b(state, 6, &self.flags.permute);
+            state = self.decrypt_round_b(state, 5, &self.flags.permute);
             state = self.decrypt_round_b(state, 4, &self.flags.permute);
             state = self.decrypt_round_b(state, 3, &self.flags.permute);
             state = self.decrypt_round_b(state, 2, &self.flags.permute);
@@ -183,6 +192,9 @@ impl Tekton256 {
             };
          
             let mut state = simd::u32x8::from_array(payload_i);
+            state = self.decrypt_round_i(state, 7, &self.flags.permute);
+            state = self.decrypt_round_i(state, 6, &self.flags.permute);
+            state = self.decrypt_round_i(state, 5, &self.flags.permute);
             state = self.decrypt_round_i(state, 4, &self.flags.permute);
             state = self.decrypt_round_i(state, 3, &self.flags.permute);
             state = self.decrypt_round_i(state, 2, &self.flags.permute);
