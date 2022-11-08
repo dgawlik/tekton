@@ -78,23 +78,3 @@ macro_rules! substitute {
 }
 
 pub(crate) use substitute;
-
-
-#[derive(PartialEq)]
-pub enum Permute {
-    PERMUTE,
-    ROTATE
-}
-
-
-#[derive(PartialEq)]
-pub enum Mode {
-    BYTE,
-    INT
-}
-
-
-pub struct Flags {
-    pub permute: Permute,
-    pub mode: Mode
-}
