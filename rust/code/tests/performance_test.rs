@@ -114,14 +114,14 @@ fn test_compare_perfomances_128(){
 
     let key = rand_u256();
 
-    let mut payload: [[u8; 32]; 100_000] = [[0; 32]; 100_000];
+    let mut payload: [[u8; 16]; 100_000] = [[0; 16]; 100_000];
 
     for i in 0..100_000 {
-        payload[i] = rand_u256();
+        payload[i].copy_from_slice(&rand_u256()[0..16]);
     }
 
-    let mut enc: [[u8; 32]; 100_000] = [[0; 32]; 100_000];
-    let mut dec: [[u8; 32]; 100_000] = [[0; 32]; 100_000];
+    let mut enc: [[u8; 16]; 100_000] = [[0; 16]; 100_000];
+    let mut dec: [[u8; 16]; 100_000] = [[0; 16]; 100_000];
 
     let mut work_t = |tekton: Tekton256| {
         for i in 0..100_000 {
