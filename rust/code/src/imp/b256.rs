@@ -1,11 +1,11 @@
-use std::simd::Simd;
+
 use std::simd;
 
 #[allow(unused)]
 use rand::{Rng};
 
 use super::primitives::*;
-use crate::imp::{Flags, Mode, Permute};
+use crate::imp::{Flags, Mode};
 
 
 pub struct Tekton256 {
@@ -122,6 +122,7 @@ impl Tekton256 {
 
 #[test]
 fn test_encrypt_decrypt(){
+    use crate::imp::{Flags, Mode, Permute};
     let lo_key: u128 = rand::thread_rng().gen();
     let hi_key: u128 = rand::thread_rng().gen();
 

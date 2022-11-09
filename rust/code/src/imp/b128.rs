@@ -3,7 +3,7 @@ use std::simd;
 #[allow(unused)]
 use rand::{Rng};
 
-use crate::imp::{Flags, Mode, Permute};
+use crate::imp::{Flags, Mode};
 
 use super::primitives::*;
 
@@ -105,6 +105,7 @@ impl Tekton128 {
 
 #[test]
 fn test_encrypt_decrypt(){
+    use crate::imp::{Flags, Mode, Permute};
     let key: u128 = rand::thread_rng().gen();
 
 
