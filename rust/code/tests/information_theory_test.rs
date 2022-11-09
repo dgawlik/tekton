@@ -49,10 +49,7 @@ fn test_compare_statistics_128(){
     let kb = GenericArray::from(key.to_be_bytes());
 
 
-    let v: f64 = Standard.sample(&mut rng);
-    let p = ((v as u128) * u128::MAX).to_le_bytes();
-
-    let mut block = GenericArray::from(p);
+   
 
     let cipher = Aes128::new(&kb);
 
@@ -71,6 +68,11 @@ fn test_compare_statistics_128(){
     let mut work_a = || {
         let mut hist = Histogram::<1000>::new();
         for _ in 0..100_000 {
+            let v: f64 = Standard.sample(&mut rng);
+            let p = ((v as u128) * u128::MAX).to_le_bytes();
+        
+            let mut block = GenericArray::from(p);
+            
             cipher.encrypt_block(&mut block);
             hist.update(block.into())
         }
