@@ -27,18 +27,28 @@ pub fn inverse_rotate_i(a: Simd<u32, 4>) -> Simd<u32, 4>{
 
 
 #[inline]
-pub fn diffusion_b(a: Simd<u8, 16>) -> Simd<u8, 16>{
+pub fn diffusion_b(a: Simd<u8, 16>, inverse: bool) -> Simd<u8, 16>{
     let A = unsafe {
         std::mem::transmute::<[u8; 16],  u128>(a.to_array())
     };
 
-    let p1 = (A & M1) << 1;
-    let p2 = (A & M2) << 2;
-    let p3 = (A & M3) << 4;
-    let p4 = (A & M4) << 8;
-    let p5 = (A & M5) << 16;
-    let p6 = (A & M6) << 32;
-    let p7 = (A & M7) << 64;
+    let mut p1 = (A & M1) << 1;
+    let mut p2 = (A & M2) << 2;
+    let mut p3 = (A & M3) << 4;
+    let mut p4 = (A & M4) << 8;
+    let mut p5 = (A & M5) << 16;
+    let mut p6 = (A & M6) << 32;
+    let mut p7 = (A & M7) << 64;
+
+    if inverse {
+        p1 = (A & !M1) >> 1;
+        p2 = (A & !M2) >> 2;
+        p3 = (A & !M3) >> 4;
+        p4 = (A & !M4) >> 8;
+        p5 = (A & !M5) >> 16;
+        p6 = (A & !M6) >> 32;
+        p7 = (A & !M7) >> 64;
+    }
 
     return simd::u8x16::from_array(unsafe {
         std::mem::transmute::<u128,  [u8; 16]>(A ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6 ^ p7)
@@ -46,18 +56,28 @@ pub fn diffusion_b(a: Simd<u8, 16>) -> Simd<u8, 16>{
 }
 
 #[inline]
-pub fn diffusion_i(a: Simd<u32, 4>) -> Simd<u32, 4>{
+pub fn diffusion_i(a: Simd<u32, 4>, inverse: bool) -> Simd<u32, 4>{
     let A = unsafe {
         std::mem::transmute::<[u32; 4],  u128>(a.to_array())
     };
 
-    let p1 = (A & M1) << 1;
-    let p2 = (A & M2) << 2;
-    let p3 = (A & M3) << 4;
-    let p4 = (A & M4) << 8;
-    let p5 = (A & M5) << 16;
-    let p6 = (A & M6) << 32;
-    let p7 = (A & M7) << 64;
+    let mut p1 = (A & M1) << 1;
+    let mut p2 = (A & M2) << 2;
+    let mut p3 = (A & M3) << 4;
+    let mut p4 = (A & M4) << 8;
+    let mut p5 = (A & M5) << 16;
+    let mut p6 = (A & M6) << 32;
+    let mut p7 = (A & M7) << 64;
+
+    if inverse {
+        p1 = (A & !M1) >> 1;
+        p2 = (A & !M2) >> 2;
+        p3 = (A & !M3) >> 4;
+        p4 = (A & !M4) >> 8;
+        p5 = (A & !M5) >> 16;
+        p6 = (A & !M6) >> 32;
+        p7 = (A & !M7) >> 64;
+    }
 
     return simd::u32x4::from_array(unsafe {
         std::mem::transmute::<u128,  [u32; 4]>(A ^ p1 ^ p2 ^ p3 ^ p4 ^ p5 ^ p6 ^ p7)
@@ -104,6 +124,7 @@ const M4: u128 = 0b00000000_11111111_00000000_11111111_00000000_11111111_0000000
 const M5: u128 = 0b00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111_00000000_00000000_11111111_11111111;
 const M6: u128 = 0b00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111_00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111;
 const M7: u128 = 0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111;
+
 
 
 #[inline]
