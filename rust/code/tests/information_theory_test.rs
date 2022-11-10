@@ -131,33 +131,5 @@ fn test_compare_statistics_128(){
 
         hist.uniformness()
     };
-
-    let tekton_bp = Tekton256::new(key,
-        Flags { permute: Permute::PERMUTE, mode: Mode::BYTE });
-
-    let u = work_t(tekton_bp);
-
-    println!("Tekton (256bit)(perm, byte) uniformness: {0:?}", u);
-
-    let tekton_br = Tekton256::new(key,
-    Flags { permute: Permute::ROTATE, mode: Mode::BYTE });
-
-    let u = work_t(tekton_br);
-
-    println!("Tekton (256bit)(rot, byte) uniformness: {0:?}", u);
-
-    let tekton_ip = Tekton256::new(key,
-    Flags { permute: Permute::PERMUTE, mode: Mode::INT });
-
-    let u = work_t(tekton_ip);
-
-    println!("Tekton (256bit)(perm, int) unifomness: {0:?}", u);
-
-    let tekton_ir = Tekton256::new(key,
-    Flags { permute: Permute::ROTATE, mode: Mode::INT });
-
-    let u = work_t(tekton_ir);
-
-    println!("Tekton (256bit)(rot, int) uniformness: {0:?}", u);
     
 }

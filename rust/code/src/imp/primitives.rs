@@ -1,27 +1,29 @@
 use std::simd::{Simd};
 use crate::imp::{Flags, Permute};
-use ::paste::paste;
 use std::simd;
 
-macro_rules! define_rotate {
-   
-    ($suffix:literal, $t:ty) => {
-        paste! {
-            #[inline]
-            pub fn [<rotate_ $suffix>]<const L: usize>(a: $t) -> $t{
-                return a.rotate_lanes_left::<L>();
-            }
 
-            #[inline]
-            pub fn [<inverse_rotate_ $suffix>]<const L: usize>(a: $t) -> $t{
-                return a.rotate_lanes_right::<L>();
-            }
-        }
-    };
+#[inline]
+pub fn rotate_b(a: Simd<u8, 16>) -> Simd<u8, 16>{
+    return a.rotate_lanes_left::<5>();
 }
 
-define_rotate!("b", Simd<u8, 16>);
-define_rotate!("i", Simd<u32, 4>);
+#[inline]
+pub fn inverse_rotate_b(a: Simd<u8, 16>) -> Simd<u8, 16>{
+    return a.rotate_lanes_right::<5>();
+}
+
+#[inline]
+pub fn rotate_i(a: Simd<u32, 4>) -> Simd<u32, 4>{
+    let b = a.rotate_lanes_left::<1>();
+    return (b >> simd::u32x4::splat(8))|(b << (simd::u32x4::splat(24)));
+}
+
+#[inline]
+pub fn inverse_rotate_i(a: Simd<u32, 4>) -> Simd<u32, 4>{
+    let b = a.rotate_lanes_right::<1>();
+    return (b << simd::u32x4::splat(8))|(b >> (simd::u32x4::splat(24)));
+}
 
 
 #[inline]
@@ -30,10 +32,15 @@ pub fn diffusion_b(a: Simd<u8, 16>,
     sh1: Simd<u8, 16>, sh2:Simd<u8, 16>, sh3:Simd<u8,16>,) -> Simd<u8, 16>{
 
     let a2: Simd<u8, 16> = a.rotate_lanes_left::<1>();
+    // let a3: Simd<u8, 16> = a.rotate_lanes_left::<2>();
 
     let p1 = (a2 & m1) << sh1;
     let p2 = (a2 & m2) << sh2;
     let p3 = (a2 & m3) << sh3;
+
+    // let p4 = (a3 & m1) << sh1;
+    // let p5 = (a3 & m2) << sh2;
+    // let p6 = (a3 & m3) << sh3;
 
     return a ^ p1 ^ p2 ^ p3;
 }
@@ -75,8 +82,8 @@ macro_rules! substitute {
 pub(crate) use substitute;
 
 
-const P: [usize; 16] = [3, 7, 13, 0, 11, 1, 15, 2, 4, 12, 5, 9, 6, 8, 14, 10];
-const INV_P: [usize; 16] = [3, 5, 7, 0, 8, 10, 12, 1, 13, 11, 15, 4, 9, 2, 14, 6];
+const P: [usize; 16] = [15, 12, 13, 14, 3,0, 1, 2,7,4, 5, 6,11,8,9,10];
+const INV_P: [usize; 16] = [5,6,7,4,9,10,11,8,13,14,15,12,1,2,3, 0];
 const PI: [usize; 4] = [1,3,0,2];
 const INV_PI: [usize; 4] = [2,0,3,1];
 
@@ -116,7 +123,7 @@ pub fn encrypt_round_b(state: Simd<u8, 16>, key: [u8; 16], mode: &Flags) -> Simd
 
     s =  match mode.permute {
         Permute::PERMUTE => permute!(s, P),
-        Permute::ROTATE =>  rotate_b::<5>(s)
+        Permute::ROTATE =>  rotate_b(s)
     };
 
     s
@@ -128,7 +135,7 @@ pub fn decrypt_round_b(state: Simd<u8, 16>, key: [u8; 16], mode: &Flags) -> Simd
 
     s = match mode.permute {
         Permute::PERMUTE => permute!(s, INV_P),
-        Permute::ROTATE => inverse_rotate_b::<5>(s)
+        Permute::ROTATE => inverse_rotate_b(s)
     };
     
     s = substitute!(s, INV_S);
@@ -150,7 +157,7 @@ pub fn encrypt_round_i(state: Simd<u32, 4>, key: [u8; 16], mode: &Flags) -> Simd
 
     s = match mode.permute {
         Permute::PERMUTE => permute!(s, PI),
-        Permute::ROTATE => rotate_i::<1>(s)
+        Permute::ROTATE => rotate_i(s)
     };
     
     s
@@ -165,7 +172,7 @@ pub fn decrypt_round_i(state: Simd<u32, 4>, key: [u8; 16], mode: &Flags) -> Simd
 
     s = match mode.permute {
         Permute::PERMUTE => permute!(s, INV_PI),
-        Permute::ROTATE => inverse_rotate_i::<1>(s)
+        Permute::ROTATE => inverse_rotate_i(s)
     };
     
     s = substitute!(s, INV_SI);
