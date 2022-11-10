@@ -1,15 +1,15 @@
 
 
 #[allow(dead_code)]
-fn gcd_extended(a: u64, b:u64, x: &mut u64, y: &mut u64) -> u64{
+fn gcd_extended(a: u16, b:u16, x: &mut u16, y: &mut u16) -> u16{
     if a == 0 {
-        *x = 0_u64;
-        *y = 1_u64;
+        *x = 0_u16;
+        *y = 1_u16;
         return b;
     }
     else {
-        let mut x1: u64 = 0_u64;
-        let mut y1: u64 = 0_u64;
+        let mut x1: u16 = 0_u16;
+        let mut y1: u16 = 0_u16;
 
         let gcd = gcd_extended(b % a, a, &mut x1, &mut y1);
 
@@ -21,14 +21,14 @@ fn gcd_extended(a: u64, b:u64, x: &mut u64, y: &mut u64) -> u64{
 }
 
 #[allow(dead_code)]
-fn mod_inverse(a: u32) -> u32 {
-    let m = 4294967296_u64;
+fn mod_inverse(a: u8) -> u8 {
+    let m = 256_u16;
 
-    let mut x: u64 = 0;
-    let mut y: u64 = 0;
+    let mut x: u16 = 0;
+    let mut y: u16 = 0;
 
     gcd_extended(a.into(), m, &mut x, &mut y);
-    return (((x % m) + m) % m) as u32;
+    return (((x % m) + m) % m) as u8;
 }
 
 pub struct Histogram<const F:usize>{
@@ -88,6 +88,65 @@ impl<const F:usize> Histogram<F> {
 
 #[test]
 pub fn calc_inverse(){
-    // print!("{}", mod_inverse(112_012_097));
-    print!("{}", (1347249345 as u32).wrapping_mul(112_012_097));
+    // print!("{}", mod_inverse(191));
+    print!("{}", (63 as u8).wrapping_mul(191));
+}
+
+use bitreader::BitReader;
+
+#[test]
+pub fn find_best_substitution(){
+    let mut primes: [u8; 256] = [0; 256];
+
+    for i in 0..256 {
+        primes[i] = i as u8; 
+    }
+
+    for i in 2..16 {
+        let mut it = 2;
+        while it*i < 256 {
+            primes[it*i] = 0;
+            it += 1;
+        }
+    }
+
+    for p in primes.into_iter().filter(|x| *x != 1 && *x != 0){
+        
+        let mut hamming_dists: [f64; 256] = [0.0; 256];
+        for i in 0..256 {
+            let ri = (i as u8).wrapping_mul(p);
+
+            let _i = (i as u8).to_be_bytes();
+            let _ri = ri.to_be_bytes();
+
+            let mut bi = BitReader::new(&_i);
+            let mut bri = BitReader::new(&_ri);
+
+            let mut count = 0;
+            for j in 0..8 {
+                if bi.read_bool() != bri.read_bool() {
+                    count += 1;
+                }
+            }
+
+            hamming_dists[i] = count as f64;
+        }
+
+        let mut avg: f64 = hamming_dists.into_iter().sum();
+        avg /= 256.0;
+        println!("{} avg hamming distance: {}", p, avg);
+    }
+}
+
+
+#[test]
+pub fn calculate_inverse_permutation(){
+    let x: [u8; 16] = [7, 4, 5, 6,  11, 8, 9, 10, 15, 12, 13, 14,  3, 0, 1, 2,];
+    let mut inv_x: [u8; 16] = [0; 16];
+
+    for i in 0..16 {
+        inv_x[x[i] as usize] = i as u8;
+    }
+
+    println!("{:?}", inv_x);
 }

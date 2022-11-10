@@ -67,40 +67,51 @@ fn test_compare_statistics_128(){
         hist.uniformness()
     };
 
-    let mut confusion_t = |tekton: Tekton128| {
-        let p = [0; 16];
+    let confusion_t = |tekton: Tekton128| {
+        
 
-        let mut conf: [f64; 128] = [0.0; 128];
-        for i in 0..128 {
-            let mut p0 = p.clone();
-            p0[i/8] = p0[i/8] & !(1 << (i%8));
+        let mut C: [f64; 100] = [0.0; 100];
 
-            let mut enc_p0 = p0.clone();
-            tekton.encrypt(&mut enc_p0);
+        for j in 0..100 {
+            let mut rng = rand::thread_rng();
+            let _p: u128 = rng.gen();
+            let p = _p.to_be_bytes();
 
-            let mut p1 = p.clone();
-            p1[i/8] = p1[i/8] | (1 << (i%8));
+            let mut conf: [f64; 128] = [0.0; 128];
+            for i in 0..128 {
+                let mut p0 = p.clone();
+                p0[i/8] = p0[i/8] & !(1 << (i%8));
 
-            let mut enc_p1 = p1.clone();
-            tekton.encrypt(&mut enc_p1);
+                let mut enc_p0 = p0.clone();
+                tekton.encrypt(&mut enc_p0);
 
-            let mut rdr0 = BitReader::new(&enc_p0);
-            let mut rdr1 = BitReader::new(&enc_p1);
+                let mut p1 = p.clone();
+                p1[i/8] = p1[i/8] | (1 << (i%8));
 
-            let mut different = 0;
-            for j in 0..128 {
-                let b0 = rdr0.read_bool();
-                let b1 = rdr1.read_bool();
+                let mut enc_p1 = p1.clone();
+                tekton.encrypt(&mut enc_p1);
 
-                if b0 != b1 {
-                    different += 1;
+                let mut rdr0 = BitReader::new(&enc_p0);
+                let mut rdr1 = BitReader::new(&enc_p1);
+
+                let mut different = 0;
+                for j in 0..128 {
+                    let b0 = rdr0.read_bool().unwrap();
+                    let b1 = rdr1.read_bool().unwrap();
+
+                    if b0 != b1 {
+                        different += 1;
+                    }
                 }
+                conf[i] = different as f64;
             }
-            conf[i] = different as f64;
+
+            let conf: f64 = conf.into_iter().sum();
+            C[j] = conf/128.0;
         }
 
-        let conf: f64 = conf.into_iter().sum();
-        return conf/128.0;
+        let avg: f64 = C.into_iter().sum();
+        return avg/100.0;
     };
 
     let mut uniformness_a = || {
@@ -118,10 +129,10 @@ fn test_compare_statistics_128(){
         hist.uniformness()
     };
 
-    let mut confusion_a = || {
+    let confusion_a = || {
         let mut rng = rand::thread_rng();
-        let v: f64 = normal.sample(&mut rng);
-        let p = (0 as u128).to_le_bytes();
+        let _p: u128 = rng.gen();
+        let p = _p.to_be_bytes();
 
         let mut conf: [f64; 128] = [0.0; 128];
         for i in 0..128 {

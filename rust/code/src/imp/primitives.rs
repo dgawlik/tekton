@@ -105,13 +105,13 @@ macro_rules! substitute {
 pub(crate) use substitute;
 
 
-const P: [usize; 16] = [15, 13, 12, 14, 3, 1, 0, 2,7, 5, 4, 6,11,9, 8, 10];
-const INV_P: [usize; 16] = [6, 5, 7, 4, 10, 9, 11, 8, 14, 13, 15, 12, 2, 1,3, 0];
+const P: [usize; 16] = [7, 4, 5, 6,  11, 8, 9, 10, 15, 12, 13, 14,  3, 0, 1, 2,];
+const INV_P: [usize; 16] = [13, 14, 15, 12, 1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8];
 const PI: [usize; 4] = [1,3,0,2];
 const INV_PI: [usize; 4] = [2,0,3,1];
 
-const S: Simd<u8, 16> = simd::u8x16::from_array([113; 16]);
-const INV_S: Simd<u8, 16> = simd::u8x16::from_array([145; 16]);
+const S: Simd<u8, 16> = simd::u8x16::from_array([191; 16]);
+const INV_S: Simd<u8, 16> = simd::u8x16::from_array([63; 16]);
 
 const SI: Simd<u32, 4> = simd::u32x4::from_array([1_347_249_345; 4]);
 const INV_SI: Simd<u32, 4> = simd::u32x4::from_array([112_012_097; 4]);
