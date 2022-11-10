@@ -9,6 +9,7 @@ edition = "2021"
 rand = "0.8.4"
 aes = "0.8.2"
 rand_distr = "0.4.3"
+bitreader = "0.3.6"
 
 [lib]
 name = "tekton"

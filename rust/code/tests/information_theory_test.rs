@@ -1,5 +1,5 @@
 use tekton::imp::b128::Tekton128;
-use tekton::imp::b256::Tekton256;
+use bitreader::BitReader;
 
 use std::time::{Instant};
 use rand::{Rng};
@@ -36,7 +36,7 @@ fn test_compare_statistics_128(){
     let key: u128 = rand::thread_rng().gen();
 
     let mut rng = rand::thread_rng();
-    let normal = Normal::new(u128::MAX as f64, (u128::MAX as f64)/10 as f64).unwrap();
+    let normal = Normal::new(u128::MAX as f64, (u128::MAX as f64)/100 as f64).unwrap();
 
     let mut payload: [[u8; 16]; 100_000] = [[0; 16]; 100_000];
 
@@ -55,7 +55,7 @@ fn test_compare_statistics_128(){
 
     let cipher = Aes128::new(&kb);
 
-    let mut work_t = |tekton: Tekton128| {
+    let mut uniformness_t = |tekton: Tekton128| {
         let mut hist = Histogram::<1000>::new();
 
         for i in 0..100_000 {
@@ -67,7 +67,43 @@ fn test_compare_statistics_128(){
         hist.uniformness()
     };
 
-    let mut work_a = || {
+    let mut confusion_t = |tekton: Tekton128| {
+        let p = payload[0];
+
+        let mut conf: [f64; 128] = [0.0; 128];
+        for i in 0..128 {
+            let mut p0 = p.clone();
+            p0[i/8] = p0[i/8] & !(1 << (i%8));
+
+            let mut enc_p0 = p0.clone();
+            tekton.encrypt(&mut enc_p0);
+
+            let mut p1 = p.clone();
+            p1[i/8] = p1[i/8] & (1 << (i%8));
+
+            let mut enc_p1 = p1.clone();
+            tekton.encrypt(&mut enc_p1);
+
+            let mut rdr0 = BitReader::new(&enc_p0);
+            let mut rdr1 = BitReader::new(&enc_p1);
+
+            let mut different = 0;
+            for j in 0..128 {
+                let b0 = rdr0.read_bool();
+                let b1 = rdr1.read_bool();
+
+                if b0 != b1 {
+                    different += 1;
+                }
+            }
+            conf[i] = different as f64;
+        }
+
+        let conf: f64 = conf.into_iter().sum();
+        return conf/128.0;
+    };
+
+    let mut uniformness_a = || {
         let mut hist = Histogram::<1000>::new();
         for _ in 0..100_000 {
             let v: f64 = normal.sample(&mut rng);
@@ -82,54 +118,109 @@ fn test_compare_statistics_128(){
         hist.uniformness()
     };
 
+    let mut confusion_a = || {
+        let mut rng = rand::thread_rng();
+        let v: f64 = normal.sample(&mut rng);
+        let p = (v as u128).to_le_bytes();
+
+        let mut conf: [f64; 128] = [0.0; 128];
+        for i in 0..128 {
+            let mut p0 = p.clone();
+            p0[i/8] = p0[i/8] & !(1 << (i%8));
+
+            let mut enc_p0 = GenericArray::from(p0);
+            cipher.encrypt_block(&mut enc_p0);
+
+            let mut p1 = p.clone();
+            p1[i/8] = p1[i/8] & (1 << (i%8));
+
+            let mut enc_p1 =  GenericArray::from(p1);
+            cipher.encrypt_block(&mut enc_p1);
+
+            let mut rdr0 = BitReader::new(&enc_p0);
+            let mut rdr1 = BitReader::new(&enc_p1);
+
+            let mut different = 0;
+            for j in 0..128 {
+                let b0 = rdr0.read_bool();
+                let b1 = rdr1.read_bool();
+
+                if b0 != b1 {
+                    different += 1;
+                }
+            }
+            conf[i] = different as f64;
+        }
+
+        let conf: f64 = conf.into_iter().sum();
+        return conf/128.0;
+    };
+
     let tekton_bp = Tekton128::new(key.to_be_bytes(),
         Flags { permute: Permute::PERMUTE, mode: Mode::BYTE });
 
-    let u = work_t(tekton_bp);
+    let u = uniformness_t(tekton_bp);
 
     println!("Tekton (128bit)(perm, byte) uniformness: {0:?}", u);
 
     let tekton_br = Tekton128::new(key.to_be_bytes(),
     Flags { permute: Permute::ROTATE, mode: Mode::BYTE });
 
-    let u = work_t(tekton_br);
+    let u = uniformness_t(tekton_br);
 
     println!("Tekton (128bit)(rot, byte) uniformness: {0:?}", u);
 
     let tekton_ip = Tekton128::new(key.to_be_bytes(),
     Flags { permute: Permute::PERMUTE, mode: Mode::INT });
 
-    let u = work_t(tekton_ip);
+    let u = uniformness_t(tekton_ip);
 
     println!("Tekton (128bit)(perm, int) uniformness: {0:?}", u);
 
     let tekton_ir = Tekton128::new(key.to_be_bytes(),
     Flags { permute: Permute::ROTATE, mode: Mode::INT });
 
-    let u = work_t(tekton_ir);
+    let u = uniformness_t(tekton_ir);
 
     println!("Tekton (128bit)(rot, int) uniformness: {0:?}", u);
 
-    let  u = work_a();
+    let  u = uniformness_a();
 
     println!("AES (128bit) uniformness: {0:?}", u);
 
 
-    let key = rand_u256();
+    println!("--------------");
 
+    let tekton_bp = Tekton128::new(key.to_be_bytes(),
+    Flags { permute: Permute::PERMUTE, mode: Mode::BYTE });
 
-    let mut enc: [[u8; 16]; 100_000] = [[0; 16]; 100_000];
+    let u = confusion_t(tekton_bp);
 
-    let mut work_t = |tekton: Tekton256| {
-        let mut hist = Histogram::<1000>::new();
+    println!("Tekton (128bit)(perm, byte) confusion: {0:?}", u);
 
-        for i in 0..100_000 {
-            enc[i] = payload[i];
-            tekton.encrypt(&mut enc[i]);
-            hist.update(enc[i]);
-        }
+    let tekton_br = Tekton128::new(key.to_be_bytes(),
+    Flags { permute: Permute::ROTATE, mode: Mode::BYTE });
 
-        hist.uniformness()
-    };
+    let u = confusion_t(tekton_br);
+
+    println!("Tekton (128bit)(rot, byte) confusion: {0:?}", u);
+
+    let tekton_ip = Tekton128::new(key.to_be_bytes(),
+    Flags { permute: Permute::PERMUTE, mode: Mode::INT });
+
+    let u = confusion_t(tekton_ip);
+
+    println!("Tekton (128bit)(perm, int) confusion: {0:?}", u);
+
+    let tekton_ir = Tekton128::new(key.to_be_bytes(),
+    Flags { permute: Permute::ROTATE, mode: Mode::INT });
+
+    let u = confusion_t(tekton_ir);
+
+    println!("Tekton (128bit)(rot, int) confusion: {0:?}", u);
+
+    let  u = confusion_a();
+
+    println!("AES (128bit) confusion: {0:?}", u);
     
 }
