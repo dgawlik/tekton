@@ -40,11 +40,14 @@ impl Tekton128 {
 
             Mode::BYTE => {
                 let mut state = simd::u8x16::from_array(*payload);
+                state = diffusion_b(state);
                 state = encrypt_round_b(state, self.keys[0], &self.flags);
                 state = encrypt_round_b(state, self.keys[1], &self.flags);
+                state = diffusion_b(state);
                 state = encrypt_round_b(state, self.keys[2], &self.flags);
                 state = encrypt_round_b(state, self.keys[3], &self.flags);
                 state = encrypt_round_b(state, self.keys[4], &self.flags);
+                
                 *payload = *state.as_array();
             },
 
@@ -54,11 +57,14 @@ impl Tekton128 {
                 };
              
                 let mut state = simd::u32x4::from_array(payload_i);
+                state = diffusion_i(state);
                 state = encrypt_round_i(state, self.keys[0], &self.flags);
                 state = encrypt_round_i(state, self.keys[1], &self.flags);
+                state = diffusion_i(state);
                 state = encrypt_round_i(state, self.keys[2], &self.flags);
                 state = encrypt_round_i(state, self.keys[3], &self.flags);
                 state = encrypt_round_i(state, self.keys[4], &self.flags);
+                
     
                 *payload = unsafe {
                     std::mem::transmute::<[u32; 4], [u8; 16]>(*state.as_array())
@@ -74,11 +80,14 @@ impl Tekton128 {
 
             Mode::BYTE => {
                 let mut state = simd::u8x16::from_array(*cipher);
+               
                 state = decrypt_round_b(state, self.keys[4], &self.flags);
                 state = decrypt_round_b(state, self.keys[3], &self.flags);
                 state = decrypt_round_b(state, self.keys[2], &self.flags);
+                state = diffusion_b(state);
                 state = decrypt_round_b(state, self.keys[1], &self.flags);
                 state = decrypt_round_b(state, self.keys[0], &self.flags);
+                state = diffusion_b(state);
                 *cipher = *state.as_array();
             },
 
@@ -88,11 +97,14 @@ impl Tekton128 {
                 };
              
                 let mut state = simd::u32x4::from_array(payload_i);
+                
                 state = decrypt_round_i(state, self.keys[4], &self.flags);
                 state = decrypt_round_i(state, self.keys[3], &self.flags);
                 state = decrypt_round_i(state, self.keys[2], &self.flags);
+                state = diffusion_i(state);
                 state = decrypt_round_i(state, self.keys[1], &self.flags);
                 state = decrypt_round_i(state, self.keys[0], &self.flags);
+                state = diffusion_i(state);
     
                 *cipher = unsafe {
                     std::mem::transmute::<[u32; 4], [u8; 16]>(*state.as_array())

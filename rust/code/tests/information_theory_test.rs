@@ -68,7 +68,7 @@ fn test_compare_statistics_128(){
     };
 
     let mut confusion_t = |tekton: Tekton128| {
-        let p = payload[0];
+        let p = [0; 16];
 
         let mut conf: [f64; 128] = [0.0; 128];
         for i in 0..128 {
@@ -79,7 +79,7 @@ fn test_compare_statistics_128(){
             tekton.encrypt(&mut enc_p0);
 
             let mut p1 = p.clone();
-            p1[i/8] = p1[i/8] & (1 << (i%8));
+            p1[i/8] = p1[i/8] | (1 << (i%8));
 
             let mut enc_p1 = p1.clone();
             tekton.encrypt(&mut enc_p1);
@@ -121,7 +121,7 @@ fn test_compare_statistics_128(){
     let mut confusion_a = || {
         let mut rng = rand::thread_rng();
         let v: f64 = normal.sample(&mut rng);
-        let p = (v as u128).to_le_bytes();
+        let p = (0 as u128).to_le_bytes();
 
         let mut conf: [f64; 128] = [0.0; 128];
         for i in 0..128 {
@@ -132,7 +132,7 @@ fn test_compare_statistics_128(){
             cipher.encrypt_block(&mut enc_p0);
 
             let mut p1 = p.clone();
-            p1[i/8] = p1[i/8] & (1 << (i%8));
+            p1[i/8] = p1[i/8] | (1 << (i%8));
 
             let mut enc_p1 =  GenericArray::from(p1);
             cipher.encrypt_block(&mut enc_p1);
