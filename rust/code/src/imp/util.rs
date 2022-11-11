@@ -33,8 +33,8 @@ fn mod_inverse(a: u64) -> u64 {
 
 #[test]
 pub fn calc_inverse(){
-    println!("{}", mod_inverse(0b01111111_10111111_01111111_10111111_01111111_10111111_01111111_10111111));
-    println!("{}", (2218482843833888831 as u64).wrapping_mul(0b01111111_10111111_01111111_10111111_01111111_10111111_01111111_10111111));
+    println!("{}", mod_inverse(0b0111111111111111111111111111111111111111111111111111111111110101));
+    println!("{}", (5869418568907584605 as u64).wrapping_mul(0b0111111111111111111111111111111111111111111111111111111111110101));
 }
 
 #[test]
@@ -146,57 +146,82 @@ pub fn find_best_substitution(){
 }
 
 
+// 0b1111111111111111111111111111111111111111111111111111011101110010
+// 0b0111111111111111111111111111111111111111111111111111111111110101
 // #[test]
 // pub fn find_best_substitution_int(){
+//     use genetic_algorithm::strategy::evolve::prelude::*;
 //     use rand::{Rng};
-//     let mut rng = rand::thread_rng();
 //     extern crate is_prime;
 //     use is_prime::*;
+    
+//     let genotype = BinaryGenotype::builder() 
+//         .with_genes_size(64)            
+//         .build()
+//         .unwrap();
 
 
-//     let mut counter = 0;
-//     let mut maxAvg = 0.0;
-//     let mut maxP = 0;
-
-//     while counter < 1000 {
-//         let p:u32 = rng.gen();
-
-//         if !is_prime(&p.to_string()) {
-//             continue;
-//         }
-
-//         let mut hamming_dists: [f64; 5_000] = [0.0; 5_000];
-//         for i in 0..5_000 {
-//             let num: u32 = rng.gen();
-//             let ri = num.wrapping_mul(p);
-
-//             let _i = num.to_be_bytes();
-//             let _ri = ri.to_be_bytes();
-
-//             let mut bi = BitReader::new(&_i);
-//             let mut bri = BitReader::new(&_ri);
-
-//             let mut count = 0;
-//             for j in 0..32 {
-//                 if bi.read_bool() != bri.read_bool() {
-//                     count += 1;
-//                 }
+//     #[derive(Clone, Debug)]
+//     pub struct CountTrue;
+//     impl Fitness for CountTrue {
+//         type Genotype = BinaryGenotype;
+//         fn calculate_for_chromosome(&mut self, chromosome: &Chromosome<Self::Genotype>) -> Option<FitnessValue> {
+            
+//             let mut p: u64 = 0;
+//             p |= 0b_10000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000;
+//             for i in 1..64 {
+//                 p >>= 1;
+//                 if chromosome.genes[i] {
+//                     p |= 0b_10000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000;
+//                 }  
 //             }
 
-//             hamming_dists[i] = count as f64;
+//             // if !is_prime(&p.to_string()){
+//             //     return Some(0 as FitnessValue)
+//             // }
+
+//             let mut hamming_dists: [f64; 1_000] = [0.0; 1_000];
+//             for i in 0..1_000 {
+//                 let num: u64 = rand::thread_rng().gen();
+//                 let ri = num.wrapping_mul(p);
+
+//                 let _i = num.to_be_bytes();
+//                 let _ri = ri.to_be_bytes();
+
+//                 let mut bi = BitReader::new(&_i);
+//                 let mut bri = BitReader::new(&_ri);
+
+//                 let mut count = 0;
+//                 for j in 0..64 {
+//                     if bi.read_bool() != bri.read_bool() {
+//                         count += 1;
+//                     }
+//                 }
+
+//                 hamming_dists[i] = count as f64;
+//             }
+
+//             let mut avg: f64 = hamming_dists.into_iter().sum();
+//             avg /= 1_000.0;
+//             println!("fitness: {}", avg);
+//             Some(avg as FitnessValue)
 //         }
-
-//         let mut avg: f64 = hamming_dists.into_iter().sum();
-//         avg /= 5_000.0;
-
-//         if(avg > maxAvg){
-//             maxAvg = avg;
-//             maxP = p;
-//         }
-
-//         counter += 1;
 //     }
-//     println!("{} avg hamming distance: {}", maxP, maxAvg);
+
+//     let mut rng = rand::thread_rng();    
+//     let evolve = Evolve::builder()
+//         .with_genotype(genotype)
+//         .with_population_size(100)        // evolve with 100 chromosomes
+//         .with_target_fitness_score(60)   // goal is 100 times true in the best chromosome
+//         .with_fitness(CountTrue)          // count the number of true values in the chromosomes
+//         .with_crossover(CrossoverUniform(true)) // crossover all individual genes between 2 chromosomes for offspring
+//         .with_mutate(MutateOnce(0.2))     // mutate a single gene with a 20% probability per chromosome
+//         .with_compete(CompeteElite)       // sort the chromosomes by fitness to determine crossover order
+//         .call(&mut rng)
+//         .unwrap();
+
+//     println!("{}", evolve);
+
 // }
 
 #[test]

@@ -11,6 +11,7 @@ aes = "0.8.2"
 rand_distr = "0.4.3"
 bitreader = "0.3.6"
 is_prime = "2.0.9"
+genetic_algorithm = "0.6.0"
 
 [lib]
 name = "tekton"
