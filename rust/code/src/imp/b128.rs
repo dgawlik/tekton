@@ -40,16 +40,10 @@ impl Tekton128 {
 
             Mode::BYTE => {
                 let mut state = simd::u8x16::from_array(*payload);
-                state = diffusion_b(state, false);
-                state = diffusion_b(state, true);
                 state = encrypt_round_b(state, self.keys[0], &self.flags);
                 state = encrypt_round_b(state, self.keys[1], &self.flags);   
-                state = diffusion_b(state, false);
-                state = diffusion_b(state, true);
                 state = encrypt_round_b(state, self.keys[2], &self.flags);
                 state = encrypt_round_b(state, self.keys[3], &self.flags);
-                state = diffusion_b(state, false);
-                state = diffusion_b(state, true);
                 state = encrypt_round_b(state, self.keys[4], &self.flags);
                 
                 *payload = *state.as_array();
@@ -90,16 +84,10 @@ impl Tekton128 {
                 let mut state = simd::u8x16::from_array(*cipher);
                
                 state = decrypt_round_b(state, self.keys[4], &self.flags);
-                state = diffusion_b(state, true);
-                state = diffusion_b(state, false);
                 state = decrypt_round_b(state, self.keys[3], &self.flags);
                 state = decrypt_round_b(state, self.keys[2], &self.flags);
-                state = diffusion_b(state, true);
-                state = diffusion_b(state, false);
                 state = decrypt_round_b(state, self.keys[1], &self.flags);
                 state = decrypt_round_b(state, self.keys[0], &self.flags);
-                state = diffusion_b(state, true);
-                state = diffusion_b(state, false);
                 *cipher = *state.as_array();
             },
 

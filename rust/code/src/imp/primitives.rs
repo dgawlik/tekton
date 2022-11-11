@@ -1,4 +1,4 @@
-use std::simd::{Simd};
+use std::simd::{Simd, u32x16, u32x4, u64x2};
 use crate::imp::{Flags, Permute};
 use std::simd;
 
@@ -24,6 +24,37 @@ pub fn inverse_rotate_i(a: Simd<u32, 4>) -> Simd<u32, 4>{
     let b = a.rotate_lanes_right::<1>();
     return (b << simd::u32x4::splat(8))|(b >> (simd::u32x4::splat(24)));
 }
+
+#[inline]
+pub fn expansion_b(a: Simd<u8, 16>) -> Simd<u8, 16> {
+    let b: Simd<u64, 2> = unsafe {
+        std::mem::transmute::<Simd<u8, 16>, Simd<u64, 2>>(a)
+    };
+
+    let b = b * u64x2::splat(0b01111111_10111111_01111111_10111111_01111111_10111111_01111111_10111111);
+    
+
+    return unsafe {
+        std::mem::transmute::<Simd<u64, 2>, Simd<u8, 16>>(b)
+    };
+}
+
+
+
+#[inline]
+pub fn inv_expansion_b(a: Simd<u8, 16>) -> Simd<u8, 16> {
+    let b: Simd<u64, 2> = unsafe {
+        std::mem::transmute::<Simd<u8, 16>, Simd<u64, 2>>(a)
+    };
+
+    let b = b * u64x2::splat(2218482843833888831);
+
+    return unsafe {
+        std::mem::transmute::<Simd<u64, 2>, Simd<u8, 16>>(b)
+    };
+}
+
+
 
 
 #[inline]
@@ -97,8 +128,8 @@ macro_rules! substitute {
 pub(crate) use substitute;
 
 
-const P: [usize; 16] = [7, 4, 5, 6,  11, 8, 9, 10, 15, 12, 13, 14,  3, 0, 1, 2,];
-const INV_P: [usize; 16] = [13, 14, 15, 12, 1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8];
+const P: [usize; 16] = [  5, 6,7,4,   9, 10,11, 8,   13, 14,15,12,    1, 2,3,0];
+const INV_P: [usize; 16] = [15, 12, 13, 14, 3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10];
 const PI: [usize; 4] = [1,3,0,2];
 const INV_PI: [usize; 4] = [2,0,3,1];
 
@@ -141,6 +172,7 @@ const M7i: Simd<u32, 4> = simd::u32x4::from_array([0b00000000_00000000_00000000_
 pub fn encrypt_round_b(state: Simd<u8, 16>, key: [u8; 16], mode: &Flags) -> Simd<u8, 16>{
     let mut s = state;
     s ^= simd::u8x16::from_array(key);
+    s = expansion_b(s);
     s = substitute!(s, S);
 
     s =  match mode.permute {
@@ -161,6 +193,7 @@ pub fn decrypt_round_b(state: Simd<u8, 16>, key: [u8; 16], mode: &Flags) -> Simd
     };
     
     s = substitute!(s, INV_S);
+    s = inv_expansion_b(s);
     s ^= simd::u8x16::from_array(key);
     s
 }

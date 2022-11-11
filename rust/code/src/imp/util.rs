@@ -1,15 +1,15 @@
 
 
 #[allow(dead_code)]
-fn gcd_extended(a: u16, b:u16, x: &mut u16, y: &mut u16) -> u16{
+fn gcd_extended(a: u128, b:u128, x: &mut u128, y: &mut u128) -> u128{
     if a == 0 {
-        *x = 0_u16;
-        *y = 1_u16;
+        *x = 0_u128;
+        *y = 1_u128;
         return b;
     }
     else {
-        let mut x1: u16 = 0_u16;
-        let mut y1: u16 = 0_u16;
+        let mut x1: u128 = 0_u128;
+        let mut y1: u128 = 0_u128;
 
         let gcd = gcd_extended(b % a, a, &mut x1, &mut y1);
 
@@ -21,14 +21,25 @@ fn gcd_extended(a: u16, b:u16, x: &mut u16, y: &mut u16) -> u16{
 }
 
 #[allow(dead_code)]
-fn mod_inverse(a: u8) -> u8 {
-    let m = 256_u16;
+fn mod_inverse(a: u64) -> u64 {
+    let m = 9_223_372_036_854_775_808_u128;
 
-    let mut x: u16 = 0;
-    let mut y: u16 = 0;
+    let mut x: u128 = 0;
+    let mut y: u128 = 0;
 
     gcd_extended(a.into(), m, &mut x, &mut y);
-    return (((x % m) + m) % m) as u8;
+    return (((x % m) + m) % m) as u64;
+}
+
+#[test]
+pub fn calc_inverse(){
+    println!("{}", mod_inverse(0b01111111_10111111_01111111_10111111_01111111_10111111_01111111_10111111));
+    println!("{}", (2218482843833888831 as u64).wrapping_mul(0b01111111_10111111_01111111_10111111_01111111_10111111_01111111_10111111));
+}
+
+#[test]
+pub fn print_binary(){
+    println!("{:b}", 127);
 }
 
 pub struct Histogram<const F:usize>{
@@ -86,11 +97,7 @@ impl<const F:usize> Histogram<F> {
     }
 }
 
-#[test]
-pub fn calc_inverse(){
-    // print!("{}", mod_inverse(191));
-    print!("{}", (63 as u8).wrapping_mul(191));
-}
+
 
 use bitreader::BitReader;
 
@@ -139,9 +146,62 @@ pub fn find_best_substitution(){
 }
 
 
+// #[test]
+// pub fn find_best_substitution_int(){
+//     use rand::{Rng};
+//     let mut rng = rand::thread_rng();
+//     extern crate is_prime;
+//     use is_prime::*;
+
+
+//     let mut counter = 0;
+//     let mut maxAvg = 0.0;
+//     let mut maxP = 0;
+
+//     while counter < 1000 {
+//         let p:u32 = rng.gen();
+
+//         if !is_prime(&p.to_string()) {
+//             continue;
+//         }
+
+//         let mut hamming_dists: [f64; 5_000] = [0.0; 5_000];
+//         for i in 0..5_000 {
+//             let num: u32 = rng.gen();
+//             let ri = num.wrapping_mul(p);
+
+//             let _i = num.to_be_bytes();
+//             let _ri = ri.to_be_bytes();
+
+//             let mut bi = BitReader::new(&_i);
+//             let mut bri = BitReader::new(&_ri);
+
+//             let mut count = 0;
+//             for j in 0..32 {
+//                 if bi.read_bool() != bri.read_bool() {
+//                     count += 1;
+//                 }
+//             }
+
+//             hamming_dists[i] = count as f64;
+//         }
+
+//         let mut avg: f64 = hamming_dists.into_iter().sum();
+//         avg /= 5_000.0;
+
+//         if(avg > maxAvg){
+//             maxAvg = avg;
+//             maxP = p;
+//         }
+
+//         counter += 1;
+//     }
+//     println!("{} avg hamming distance: {}", maxP, maxAvg);
+// }
+
 #[test]
 pub fn calculate_inverse_permutation(){
-    let x: [u8; 16] = [7, 4, 5, 6,  11, 8, 9, 10, 15, 12, 13, 14,  3, 0, 1, 2,];
+    let x: [u8; 16] = [  5, 6,7,4,   9, 10,11, 8,   13, 14,15,12,    1, 2,3,0];
     let mut inv_x: [u8; 16] = [0; 16];
 
     for i in 0..16 {
