@@ -45,8 +45,6 @@ impl Tekton256 {
             Mode::BYTE => {
                 let mut state = simd::u8x16::from_array(*payload);
                 
-                state = diffusion_b(state, false);
-                state = diffusion_b(state, true);
                 state = encrypt_round_b(state, self.keys[0], &self.flags);
                 state = encrypt_round_b(state, self.keys[1], &self.flags);
                 state = encrypt_round_b(state, self.keys[2], &self.flags);
@@ -66,8 +64,6 @@ impl Tekton256 {
              
                 let mut state = simd::u32x4::from_array(payload_i);
                 
-                state = diffusion_i(state, false);
-                state = diffusion_i(state, true);
                 state = encrypt_round_i(state, self.keys[0], &self.flags);
                 state = encrypt_round_i(state, self.keys[1], &self.flags);
                 state = encrypt_round_i(state, self.keys[2], &self.flags);
@@ -100,8 +96,6 @@ impl Tekton256 {
                 state = decrypt_round_b(state, self.keys[2], &self.flags);
                 state = decrypt_round_b(state, self.keys[1], &self.flags);
                 state = decrypt_round_b(state, self.keys[0], &self.flags);
-                state = diffusion_b(state, true);
-                state = diffusion_b(state, false);
                 
                 *cipher = *state.as_array();
             },
@@ -121,8 +115,6 @@ impl Tekton256 {
                 state = decrypt_round_i(state, self.keys[2], &self.flags);
                 state = decrypt_round_i(state, self.keys[1], &self.flags);
                 state = decrypt_round_i(state, self.keys[0], &self.flags);
-                state = diffusion_i(state, true);
-                state = diffusion_i(state, false);
                
     
                 *cipher = unsafe {
