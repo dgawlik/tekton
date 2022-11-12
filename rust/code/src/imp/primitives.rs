@@ -139,6 +139,7 @@ pub fn encrypt_round_i(state: Simd<u32, 4>, key: Simd<u8, 16>) -> Simd<u32, 4>{
     };
 
     s ^= key;
+    s = expansion_i(s);
     s = substitute!(s, SI);
     s = rotate_i(s);
     
@@ -154,6 +155,7 @@ pub fn decrypt_round_i(state: Simd<u32, 4>, key: Simd<u8, 16>) -> Simd<u32, 4>{
     s= inverse_rotate_i(s);
     
     s = substitute!(s, INV_SI);
+    s = inv_expansion_i(s);
     s ^= key;
     s
 }
