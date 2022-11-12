@@ -53,7 +53,7 @@ fn test_compare_statistics_128(){
         hist.uniformness()
     };
 
-    let confusion_t = |tekton: Tekton128| {
+    let diffusion_t = |tekton: Tekton128| {
         
 
         let mut c: [f64; 100] = [0.0; 100];
@@ -115,7 +115,7 @@ fn test_compare_statistics_128(){
         hist.uniformness()
     };
 
-    let confusion_a = || {
+    let diffusion_a = || {
         let mut rng = rand::thread_rng();
         let _p: u128 = rng.gen();
         let p = _p.to_be_bytes();
@@ -152,6 +152,7 @@ fn test_compare_statistics_128(){
         let conf: f64 = conf.into_iter().sum();
         return conf/128.0;
     };
+
 
     let tekton_bp = Tekton128::new(key.to_be_bytes(),
         Flags { rounds: Rounds::FASTER, mode: Mode::BYTE });
@@ -191,32 +192,32 @@ fn test_compare_statistics_128(){
     let tekton_bp = Tekton128::new(key.to_be_bytes(),
     Flags { rounds: Rounds::FASTER, mode: Mode::BYTE });
 
-    let u = confusion_t(tekton_bp);
+    let u = diffusion_t(tekton_bp);
 
     println!("Tekton (128bit)(faster, byte) confusion: {0:?}", u);
 
     let tekton_br = Tekton128::new(key.to_be_bytes(),
     Flags { rounds: Rounds::SAFER, mode: Mode::BYTE });
 
-    let u = confusion_t(tekton_br);
+    let u = diffusion_t(tekton_br);
 
     println!("Tekton (128bit)(safer, byte) confusion: {0:?}", u);
 
     let tekton_ip = Tekton128::new(key.to_be_bytes(),
     Flags { rounds: Rounds::FASTER, mode: Mode::INT });
 
-    let u = confusion_t(tekton_ip);
+    let u = diffusion_t(tekton_ip);
 
     println!("Tekton (128bit)(faster, int) confusion: {0:?}", u);
 
     let tekton_ir = Tekton128::new(key.to_be_bytes(),
     Flags { rounds: Rounds::SAFER, mode: Mode::INT });
 
-    let u = confusion_t(tekton_ir);
+    let u = diffusion_t(tekton_ir);
 
     println!("Tekton (128bit)(safer, int) confusion: {0:?}", u);
 
-    let  u = confusion_a();
+    let  u = diffusion_a();
 
     println!("AES (128bit) confusion: {0:?}", u);
     
