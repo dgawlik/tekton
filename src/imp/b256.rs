@@ -61,10 +61,10 @@ impl Tekton256 {
 
             Mode::INT => {
                 let payload_i = unsafe {
-                    std::mem::transmute::<[u8; 16], [u32; 4]>(*payload)
+                    std::mem::transmute::<[u8; 16], [u16; 8]>(*payload)
                 };
              
-                let mut state = simd::u32x4::from_array(payload_i);
+                let mut state = simd::u16x8::from_array(payload_i);
                 
                 if self.flags.rounds == Rounds::SAFER {
                     state = encrypt_round_i(state, self.keys[0]);
@@ -79,7 +79,7 @@ impl Tekton256 {
                 state = encrypt_round_i(state, self.keys[7]);
     
                 *payload = unsafe {
-                    std::mem::transmute::<[u32; 4], [u8; 16]>(*state.as_array())
+                    std::mem::transmute::<[u16; 8], [u8; 16]>(*state.as_array())
                 };
             }
 
@@ -110,10 +110,10 @@ impl Tekton256 {
 
             Mode::INT => {
                 let payload_i = unsafe {
-                    std::mem::transmute::<[u8; 16], [u32; 4]>(*cipher)
+                    std::mem::transmute::<[u8; 16], [u16; 8]>(*cipher)
                 };
              
-                let mut state = simd::u32x4::from_array(payload_i);
+                let mut state = simd::u16x8::from_array(payload_i);
                 
                 state = decrypt_round_i(state, self.keys[7]);
                 state = decrypt_round_i(state, self.keys[6]);
@@ -129,7 +129,7 @@ impl Tekton256 {
                
     
                 *cipher = unsafe {
-                    std::mem::transmute::<[u32; 4], [u8; 16]>(*state.as_array())
+                    std::mem::transmute::<[u16; 8], [u8; 16]>(*state.as_array())
                 };
             }
         };

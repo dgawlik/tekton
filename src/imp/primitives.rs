@@ -13,15 +13,15 @@ pub fn inverse_rotate_b(a: Simd<u8, 16>) -> Simd<u8, 16>{
 }
 
 #[inline]
-pub fn rotate_i(a: Simd<u32, 4>) -> Simd<u32, 4>{
-    let b = a.rotate_lanes_left::<1>();
-    return (b >> simd::u32x4::splat(8))|(b << (simd::u32x4::splat(24)));
+pub fn rotate_i(a: Simd<u16, 8>) -> Simd<u16, 8>{
+    let b = a.rotate_lanes_left::<2>();
+    return (b >> simd::u16x8::splat(8))|(b << (simd::u16x8::splat(8)));
 }
 
 #[inline]
-pub fn inverse_rotate_i(a: Simd<u32, 4>) -> Simd<u32, 4>{
-    let b = a.rotate_lanes_right::<1>();
-    return (b << simd::u32x4::splat(8))|(b >> (simd::u32x4::splat(24)));
+pub fn inverse_rotate_i(a: Simd<u16, 8>) -> Simd<u16, 8>{
+    let b = a.rotate_lanes_right::<2>();
+    return (b << simd::u16x8::splat(8))|(b >> (simd::u16x8::splat(8)));
 }
 
 #[inline]
@@ -54,31 +54,31 @@ pub fn inv_expansion_b(a: Simd<u8, 16>) -> Simd<u8, 16> {
 }
 
 #[inline]
-pub fn expansion_i(a: Simd<u32, 4>) -> Simd<u32, 4> {
+pub fn expansion_i(a: Simd<u16, 8>) -> Simd<u16, 8> {
     let b: Simd<u64, 2> = unsafe {
-        std::mem::transmute::<Simd<u32, 4>, Simd<u64, 2>>(a)
+        std::mem::transmute::<Simd<u16, 8>, Simd<u64, 2>>(a)
     };
 
     let b = b * E;
     
 
     return unsafe {
-        std::mem::transmute::<Simd<u64, 2>, Simd<u32, 4>>(b)
+        std::mem::transmute::<Simd<u64, 2>, Simd<u16, 8>>(b)
     };
 }
 
 
 
 #[inline]
-pub fn inv_expansion_i(a: Simd<u32, 4>) -> Simd<u32, 4> {
+pub fn inv_expansion_i(a: Simd<u16, 8>) -> Simd<u16, 8> {
     let b: Simd<u64, 2> = unsafe {
-        std::mem::transmute::<Simd<u32, 4>, Simd<u64, 2>>(a)
+        std::mem::transmute::<Simd<u16, 8>, Simd<u64, 2>>(a)
     };
 
     let b = b * INV_E;
 
     return unsafe {
-        std::mem::transmute::<Simd<u64, 2>, Simd<u32, 4>>(b)
+        std::mem::transmute::<Simd<u64, 2>, Simd<u16, 8>>(b)
     };
 }
 
@@ -100,8 +100,8 @@ pub(crate) use substitute;
 const S: Simd<u8, 16> = simd::u8x16::from_array([191; 16]);
 const INV_S: Simd<u8, 16> = simd::u8x16::from_array([63; 16]);
 
-const SI: Simd<u32, 4> = simd::u32x4::from_array([1_347_249_345; 4]);
-const INV_SI: Simd<u32, 4> = simd::u32x4::from_array([112_012_097; 4]);
+const SS: Simd<u16, 8> = simd::u16x8::from_array([38805; 8]);
+const INV_SS: Simd<u16, 8> = simd::u16x8::from_array([64445; 8]);
 
 const E: Simd<u64, 2> = simd::u64x2::from_array([0b01001111_01001111_01001111_01001111_01001111_01001111_01001111_01001111; 2]);
 const INV_E: Simd<u64, 2> = simd::u64x2::from_array([1167515447703136175; 2]);
@@ -132,29 +132,29 @@ pub fn decrypt_round_b(state: Simd<u8, 16>, key: Simd<u8, 16>) -> Simd<u8, 16>{
 }
 
 #[inline]
-pub fn encrypt_round_i(state: Simd<u32, 4>, key: Simd<u8, 16>) -> Simd<u32, 4>{
+pub fn encrypt_round_i(state: Simd<u16, 8>, key: Simd<u8, 16>) -> Simd<u16, 8>{
     let mut s = state;
     let key = unsafe {
-        std::mem::transmute::<Simd<u8, 16>, Simd<u32, 4>>(key)
+        std::mem::transmute::<Simd<u8, 16>, Simd<u16, 8>>(key)
     };
 
     s ^= key;
     s = expansion_i(s);
-    s = substitute!(s, SI);
+    s = substitute!(s, SS);
     s = rotate_i(s);
     
     s
 }
 
 #[inline]
-pub fn decrypt_round_i(state: Simd<u32, 4>, key: Simd<u8, 16>) -> Simd<u32, 4>{
+pub fn decrypt_round_i(state: Simd<u16, 8>, key: Simd<u8, 16>) -> Simd<u16, 8>{
     let mut s = state;
     let key = unsafe {
-        std::mem::transmute::<Simd<u8, 16>, Simd<u32, 4>>(key)
+        std::mem::transmute::<Simd<u8, 16>, Simd<u16, 8>>(key)
     };
     s= inverse_rotate_i(s);
     
-    s = substitute!(s, INV_SI);
+    s = substitute!(s, INV_SS);
     s = inv_expansion_i(s);
     s ^= key;
     s
