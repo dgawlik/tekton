@@ -5,7 +5,7 @@ use std::simd;
 use rand::{Rng};
 
 use super::primitives::*;
-use crate::imp::{Flags, Mode};
+use crate::imp::{Flags, Mode, Rounds};
 use std::simd::Simd;
 
 pub struct Tekton256 {
@@ -45,14 +45,16 @@ impl Tekton256 {
             Mode::BYTE => {
                 let mut state = simd::u8x16::from_array(*payload);
                 
-                state = encrypt_round_b(state, self.keys[0], &self.flags);
-                state = encrypt_round_b(state, self.keys[1], &self.flags);
-                state = encrypt_round_b(state, self.keys[2], &self.flags);
-                state = encrypt_round_b(state, self.keys[3], &self.flags);
-                state = encrypt_round_b(state, self.keys[4], &self.flags);
-                state = encrypt_round_b(state, self.keys[5], &self.flags);
-                state = encrypt_round_b(state, self.keys[6], &self.flags);
-                state = encrypt_round_b(state, self.keys[7], &self.flags);
+                if self.flags.rounds == Rounds::SAFER {
+                    state = encrypt_round_b(state, self.keys[0]);
+                    state = encrypt_round_b(state, self.keys[1]);
+                }
+                state = encrypt_round_b(state, self.keys[2]);
+                state = encrypt_round_b(state, self.keys[3]);
+                state = encrypt_round_b(state, self.keys[4]);
+                state = encrypt_round_b(state, self.keys[5]);
+                state = encrypt_round_b(state, self.keys[6]);
+                state = encrypt_round_b(state, self.keys[7]);
                 
                 *payload = *state.as_array();
             },
@@ -64,14 +66,14 @@ impl Tekton256 {
              
                 let mut state = simd::u32x4::from_array(payload_i);
                 
-                state = encrypt_round_i(state, self.keys[0], &self.flags);
-                state = encrypt_round_i(state, self.keys[1], &self.flags);
-                state = encrypt_round_i(state, self.keys[2], &self.flags);
-                state = encrypt_round_i(state, self.keys[3], &self.flags);
-                state = encrypt_round_i(state, self.keys[4], &self.flags);
-                state = encrypt_round_i(state, self.keys[5], &self.flags);
-                state = encrypt_round_i(state, self.keys[6], &self.flags);
-                state = encrypt_round_i(state, self.keys[7], &self.flags);
+                state = encrypt_round_i(state, self.keys[0]);
+                state = encrypt_round_i(state, self.keys[1]);
+                state = encrypt_round_i(state, self.keys[2]);
+                state = encrypt_round_i(state, self.keys[3]);
+                state = encrypt_round_i(state, self.keys[4]);
+                state = encrypt_round_i(state, self.keys[5]);
+                state = encrypt_round_i(state, self.keys[6]);
+                state = encrypt_round_i(state, self.keys[7]);
     
                 *payload = unsafe {
                     std::mem::transmute::<[u32; 4], [u8; 16]>(*state.as_array())
@@ -88,14 +90,17 @@ impl Tekton256 {
             Mode::BYTE => {
                 let mut state = simd::u8x16::from_array(*cipher);
                 
-                state = decrypt_round_b(state, self.keys[7], &self.flags);
-                state = decrypt_round_b(state, self.keys[6], &self.flags);
-                state = decrypt_round_b(state, self.keys[5], &self.flags);
-                state = decrypt_round_b(state, self.keys[4], &self.flags);
-                state = decrypt_round_b(state, self.keys[3], &self.flags);   
-                state = decrypt_round_b(state, self.keys[2], &self.flags);
-                state = decrypt_round_b(state, self.keys[1], &self.flags);
-                state = decrypt_round_b(state, self.keys[0], &self.flags);
+                state = decrypt_round_b(state, self.keys[7]);
+                state = decrypt_round_b(state, self.keys[6]);
+                state = decrypt_round_b(state, self.keys[5]);
+                state = decrypt_round_b(state, self.keys[4]);
+                state = decrypt_round_b(state, self.keys[3]);   
+                state = decrypt_round_b(state, self.keys[2]);
+
+                if self.flags.rounds == Rounds::SAFER {
+                    state = decrypt_round_b(state, self.keys[1]);
+                    state = decrypt_round_b(state, self.keys[0]);
+                }
                 
                 *cipher = *state.as_array();
             },
@@ -107,14 +112,14 @@ impl Tekton256 {
              
                 let mut state = simd::u32x4::from_array(payload_i);
                 
-                state = decrypt_round_i(state, self.keys[7], &self.flags);
-                state = decrypt_round_i(state, self.keys[6], &self.flags);
-                state = decrypt_round_i(state, self.keys[5], &self.flags);
-                state = decrypt_round_i(state, self.keys[4], &self.flags);
-                state = decrypt_round_i(state, self.keys[3], &self.flags);
-                state = decrypt_round_i(state, self.keys[2], &self.flags);
-                state = decrypt_round_i(state, self.keys[1], &self.flags);
-                state = decrypt_round_i(state, self.keys[0], &self.flags);
+                state = decrypt_round_i(state, self.keys[7]);
+                state = decrypt_round_i(state, self.keys[6]);
+                state = decrypt_round_i(state, self.keys[5]);
+                state = decrypt_round_i(state, self.keys[4]);
+                state = decrypt_round_i(state, self.keys[3]);
+                state = decrypt_round_i(state, self.keys[2]);
+                state = decrypt_round_i(state, self.keys[1]);
+                state = decrypt_round_i(state, self.keys[0]);
                
     
                 *cipher = unsafe {
@@ -129,7 +134,7 @@ impl Tekton256 {
 
 #[test]
 fn test_encrypt_decrypt(){
-    use crate::imp::{Flags, Mode, Permute};
+    use crate::imp::{Flags, Mode, Rounds};
     let lo_key: u128 = rand::thread_rng().gen();
     let hi_key: u128 = rand::thread_rng().gen();
 
@@ -157,25 +162,25 @@ fn test_encrypt_decrypt(){
     test_in_loop(
         Tekton256::new(key, 
         Flags {
-            permute: Permute::PERMUTE, 
+            rounds: Rounds::FASTER, 
             mode: Mode::BYTE}));
 
     test_in_loop(
         Tekton256::new(key, 
         Flags {
-            permute: Permute::ROTATE, 
+            rounds: Rounds::SAFER, 
             mode: Mode::BYTE}));
 
     test_in_loop(
         Tekton256::new(key, 
         Flags {
-            permute: Permute::PERMUTE, 
+            rounds: Rounds::FASTER, 
             mode: Mode::INT}));
 
     test_in_loop(
         Tekton256::new(key, 
         Flags {
-            permute: Permute::ROTATE, 
+            rounds: Rounds::SAFER, 
             mode: Mode::INT}));
 
     

@@ -5,7 +5,7 @@ use rand::{Rng};
 
 use crate::imp::{Flags, Mode};
 
-use super::primitives::*;
+use super::{primitives::*, Rounds};
 
 use simd::Simd;
 
@@ -42,11 +42,15 @@ impl Tekton128 {
 
             Mode::BYTE => {
                 let mut state = simd::u8x16::from_array(*payload);
-                state = encrypt_round_b(state, self.keys[0], &self.flags);
-                state = encrypt_round_b(state, self.keys[1], &self.flags);   
-                state = encrypt_round_b(state, self.keys[2], &self.flags);
-                state = encrypt_round_b(state, self.keys[3], &self.flags);
-                // state = encrypt_round_b(state, self.keys[4], &self.flags);
+                if self.flags.rounds == Rounds::SAFER {
+                    state = encrypt_round_b(state, self.keys[0]);
+                }
+                
+                state = encrypt_round_b(state, self.keys[1]);   
+                state = encrypt_round_b(state, self.keys[2]);
+                state = encrypt_round_b(state, self.keys[3]);
+                state = encrypt_round_b(state, self.keys[4]);
+                
                 
                 *payload = *state.as_array();
             },
@@ -59,15 +63,15 @@ impl Tekton128 {
                 let mut state = simd::u32x4::from_array(payload_i);
                 state = diffusion_i(state, false);
                 state = diffusion_i(state, true);
-                state = encrypt_round_i(state, self.keys[0], &self.flags);
-                state = encrypt_round_i(state, self.keys[1], &self.flags);
+                state = encrypt_round_i(state, self.keys[0]);
+                state = encrypt_round_i(state, self.keys[1]);
                 state = diffusion_i(state, false);
                 state = diffusion_i(state, true);
-                state = encrypt_round_i(state, self.keys[2], &self.flags);
-                state = encrypt_round_i(state, self.keys[3], &self.flags);
+                state = encrypt_round_i(state, self.keys[2]);
+                state = encrypt_round_i(state, self.keys[3]);
                 state = diffusion_i(state, false);
                 state = diffusion_i(state, true);
-                state = encrypt_round_i(state, self.keys[4], &self.flags);
+                state = encrypt_round_i(state, self.keys[4]);
                 
     
                 *payload = unsafe {
@@ -85,11 +89,13 @@ impl Tekton128 {
             Mode::BYTE => {
                 let mut state = simd::u8x16::from_array(*cipher);
                
-                // state = decrypt_round_b(state, self.keys[4], &self.flags);
-                state = decrypt_round_b(state, self.keys[3], &self.flags);
-                state = decrypt_round_b(state, self.keys[2], &self.flags);
-                state = decrypt_round_b(state, self.keys[1], &self.flags);
-                state = decrypt_round_b(state, self.keys[0], &self.flags);
+                state = decrypt_round_b(state, self.keys[4]);
+                state = decrypt_round_b(state, self.keys[3]);
+                state = decrypt_round_b(state, self.keys[2]);
+                state = decrypt_round_b(state, self.keys[1]);
+                if self.flags.rounds == Rounds::SAFER {
+                    state = decrypt_round_b(state, self.keys[0]);
+                }
                 *cipher = *state.as_array();
             },
 
@@ -100,15 +106,15 @@ impl Tekton128 {
              
                 let mut state = simd::u32x4::from_array(payload_i);
                 
-                state = decrypt_round_i(state, self.keys[4], &self.flags);
+                state = decrypt_round_i(state, self.keys[4]);
                 state = diffusion_i(state, true);
                 state = diffusion_i(state, false);
-                state = decrypt_round_i(state, self.keys[3], &self.flags);
-                state = decrypt_round_i(state, self.keys[2], &self.flags);
+                state = decrypt_round_i(state, self.keys[3]);
+                state = decrypt_round_i(state, self.keys[2]);
                 state = diffusion_i(state, true);
                 state = diffusion_i(state, false);
-                state = decrypt_round_i(state, self.keys[1], &self.flags);
-                state = decrypt_round_i(state, self.keys[0], &self.flags);
+                state = decrypt_round_i(state, self.keys[1]);
+                state = decrypt_round_i(state, self.keys[0]);
                 state = diffusion_i(state, true);
                 state = diffusion_i(state, false);
     
@@ -123,7 +129,7 @@ impl Tekton128 {
 
 #[test]
 fn test_encrypt_decrypt(){
-    use crate::imp::{Flags, Mode, Permute};
+    use crate::imp::{Flags, Mode, Rounds};
     let key: u128 = rand::thread_rng().gen();
 
 
@@ -146,25 +152,25 @@ fn test_encrypt_decrypt(){
     test_in_loop(
         Tekton128::new(key.to_be_bytes(), 
         Flags {
-            permute: Permute::PERMUTE, 
+            rounds: Rounds::FASTER, 
             mode: Mode::BYTE}));
 
     test_in_loop(
         Tekton128::new(key.to_be_bytes(), 
         Flags {
-            permute: Permute::ROTATE, 
+            rounds: Rounds::SAFER, 
             mode: Mode::BYTE}));
 
     test_in_loop(
         Tekton128::new(key.to_be_bytes(), 
         Flags {
-            permute: Permute::PERMUTE, 
+            rounds: Rounds::FASTER, 
             mode: Mode::INT}));
 
     test_in_loop(
         Tekton128::new(key.to_be_bytes(), 
         Flags {
-            permute: Permute::ROTATE, 
+            rounds: Rounds::SAFER, 
             mode: Mode::INT}));
 
     

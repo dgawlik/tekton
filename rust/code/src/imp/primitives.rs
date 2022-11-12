@@ -1,5 +1,4 @@
 use std::simd::{Simd, u32x16, u32x4, u64x2};
-use crate::imp::{Flags, Permute};
 use std::simd;
 
 
@@ -109,15 +108,6 @@ pub fn diffusion_i(a: Simd<u32, 4>, inverse: bool) -> Simd<u32, 4>{
 
 
 
-macro_rules! permute {
-   
-    ($a:expr, $lit:expr) => {
-        simd::simd_swizzle!($a, $lit)
-    };
-}
-
-pub(crate) use permute;
-
 macro_rules! substitute {
    
     ($a:expr, $s:expr) => {
@@ -171,29 +161,21 @@ const M7i: Simd<u32, 4> = simd::u32x4::from_array([0b00000000_00000000_00000000_
 
 
 #[inline]
-pub fn encrypt_round_b(state: Simd<u8, 16>, key: Simd<u8, 16>, mode: &Flags) -> Simd<u8, 16>{
+pub fn encrypt_round_b(state: Simd<u8, 16>, key: Simd<u8, 16>) -> Simd<u8, 16>{
     let mut s = state;
     s ^= key;
     s = expansion_b(s);
     s = substitute!(s, S);
-
-    s =  match mode.permute {
-        Permute::PERMUTE => permute!(s, P),
-        Permute::ROTATE =>  rotate_b(s)
-    };
+    s =  rotate_b(s);
 
     s
 }
 
 #[inline]
-pub fn decrypt_round_b(state: Simd<u8, 16>, key: Simd<u8, 16>, mode: &Flags) -> Simd<u8, 16>{
+pub fn decrypt_round_b(state: Simd<u8, 16>, key: Simd<u8, 16>) -> Simd<u8, 16>{
     let mut s = state;
 
-    s = match mode.permute {
-        Permute::PERMUTE => permute!(s, INV_P),
-        Permute::ROTATE => inverse_rotate_b(s)
-    };
-    
+    s = inverse_rotate_b(s);
     s = substitute!(s, INV_S);
     s = inv_expansion_b(s);
     s ^= key;
@@ -201,7 +183,7 @@ pub fn decrypt_round_b(state: Simd<u8, 16>, key: Simd<u8, 16>, mode: &Flags) -> 
 }
 
 #[inline]
-pub fn encrypt_round_i(state: Simd<u32, 4>, key: Simd<u8, 16>, mode: &Flags) -> Simd<u32, 4>{
+pub fn encrypt_round_i(state: Simd<u32, 4>, key: Simd<u8, 16>) -> Simd<u32, 4>{
     let mut s = state;
     let key = unsafe {
         std::mem::transmute::<Simd<u8, 16>, Simd<u32, 4>>(key)
@@ -209,26 +191,18 @@ pub fn encrypt_round_i(state: Simd<u32, 4>, key: Simd<u8, 16>, mode: &Flags) -> 
 
     s ^= key;
     s = substitute!(s, SI);
-
-    s = match mode.permute {
-        Permute::PERMUTE => permute!(s, PI),
-        Permute::ROTATE => rotate_i(s)
-    };
+    s = rotate_i(s);
     
     s
 }
 
 #[inline]
-pub fn decrypt_round_i(state: Simd<u32, 4>, key: Simd<u8, 16>, mode: &Flags) -> Simd<u32, 4>{
+pub fn decrypt_round_i(state: Simd<u32, 4>, key: Simd<u8, 16>) -> Simd<u32, 4>{
     let mut s = state;
     let key = unsafe {
         std::mem::transmute::<Simd<u8, 16>, Simd<u32, 4>>(key)
     };
-
-    s = match mode.permute {
-        Permute::PERMUTE => permute!(s, INV_PI),
-        Permute::ROTATE => inverse_rotate_i(s)
-    };
+    s= inverse_rotate_i(s);
     
     s = substitute!(s, INV_SI);
     s ^= key;

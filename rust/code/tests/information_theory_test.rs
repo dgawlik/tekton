@@ -12,7 +12,7 @@ use aes::cipher::{
     generic_array::GenericArray,
 };
 
-use tekton::imp::{Flags, Mode, Permute};
+use tekton::imp::{Flags, Mode, Rounds};
 
 
 
@@ -168,32 +168,32 @@ fn test_compare_statistics_128(){
     };
 
     let tekton_bp = Tekton128::new(key.to_be_bytes(),
-        Flags { permute: Permute::PERMUTE, mode: Mode::BYTE });
+        Flags { rounds: Rounds::FASTER, mode: Mode::BYTE });
 
     let u = uniformness_t(tekton_bp);
 
-    println!("Tekton (128bit)(perm, byte) uniformness: {0:?}", u);
+    println!("Tekton (128bit)(faster, byte) uniformness: {0:?}", u);
 
     let tekton_br = Tekton128::new(key.to_be_bytes(),
-    Flags { permute: Permute::ROTATE, mode: Mode::BYTE });
+    Flags { rounds: Rounds::SAFER, mode: Mode::BYTE });
 
     let u = uniformness_t(tekton_br);
 
-    println!("Tekton (128bit)(rot, byte) uniformness: {0:?}", u);
+    println!("Tekton (128bit)(safer, byte) uniformness: {0:?}", u);
 
     let tekton_ip = Tekton128::new(key.to_be_bytes(),
-    Flags { permute: Permute::PERMUTE, mode: Mode::INT });
+    Flags { rounds: Rounds::FASTER, mode: Mode::INT });
 
     let u = uniformness_t(tekton_ip);
 
-    println!("Tekton (128bit)(perm, int) uniformness: {0:?}", u);
+    println!("Tekton (128bit)(faster, int) uniformness: {0:?}", u);
 
     let tekton_ir = Tekton128::new(key.to_be_bytes(),
-    Flags { permute: Permute::ROTATE, mode: Mode::INT });
+    Flags { rounds: Rounds::SAFER, mode: Mode::INT });
 
     let u = uniformness_t(tekton_ir);
 
-    println!("Tekton (128bit)(rot, int) uniformness: {0:?}", u);
+    println!("Tekton (128bit)(safer, int) uniformness: {0:?}", u);
 
     let  u = uniformness_a();
 
@@ -203,32 +203,32 @@ fn test_compare_statistics_128(){
     println!("--------------");
 
     let tekton_bp = Tekton128::new(key.to_be_bytes(),
-    Flags { permute: Permute::PERMUTE, mode: Mode::BYTE });
+    Flags { rounds: Rounds::FASTER, mode: Mode::BYTE });
 
     let u = confusion_t(tekton_bp);
 
-    println!("Tekton (128bit)(perm, byte) confusion: {0:?}", u);
+    println!("Tekton (128bit)(faster, byte) confusion: {0:?}", u);
 
     let tekton_br = Tekton128::new(key.to_be_bytes(),
-    Flags { permute: Permute::ROTATE, mode: Mode::BYTE });
+    Flags { rounds: Rounds::SAFER, mode: Mode::BYTE });
 
     let u = confusion_t(tekton_br);
 
-    println!("Tekton (128bit)(rot, byte) confusion: {0:?}", u);
+    println!("Tekton (128bit)(safer, byte) confusion: {0:?}", u);
 
     let tekton_ip = Tekton128::new(key.to_be_bytes(),
-    Flags { permute: Permute::PERMUTE, mode: Mode::INT });
+    Flags { rounds: Rounds::FASTER, mode: Mode::INT });
 
     let u = confusion_t(tekton_ip);
 
-    println!("Tekton (128bit)(perm, int) confusion: {0:?}", u);
+    println!("Tekton (128bit)(faster, int) confusion: {0:?}", u);
 
     let tekton_ir = Tekton128::new(key.to_be_bytes(),
-    Flags { permute: Permute::ROTATE, mode: Mode::INT });
+    Flags { rounds: Rounds::SAFER, mode: Mode::INT });
 
     let u = confusion_t(tekton_ir);
 
-    println!("Tekton (128bit)(rot, int) confusion: {0:?}", u);
+    println!("Tekton (128bit)(safer, int) confusion: {0:?}", u);
 
     let  u = confusion_a();
 

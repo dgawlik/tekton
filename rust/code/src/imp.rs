@@ -7,9 +7,10 @@ pub mod util;
 
 pub mod primitives;
 
-pub enum Permute {
-    PERMUTE,
-    ROTATE
+#[derive(PartialEq)]
+pub enum Rounds {
+    FASTER,
+    SAFER
 }
 
 
@@ -20,6 +21,6 @@ pub enum Mode {
 
 
 pub struct Flags {
-    pub permute: Permute,
+    pub rounds: Rounds,
     pub mode: Mode
 }

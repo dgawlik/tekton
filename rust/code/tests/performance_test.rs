@@ -12,7 +12,7 @@ use aes::cipher::{
     generic_array::GenericArray,
 };
 
-use tekton::imp::{Flags, Mode, Permute};
+use tekton::imp::{Flags, Mode, Rounds};
 
 fn rand_u256() -> [u8; 32]{
     let lo_a: u128 = rand::thread_rng().gen();
@@ -66,40 +66,40 @@ fn test_compare_perfomances_128(){
     };
 
     let tekton_bp = Tekton128::new(key.to_be_bytes(),
-        Flags { permute: Permute::PERMUTE, mode: Mode::BYTE });
+        Flags { rounds: Rounds::FASTER, mode: Mode::BYTE });
 
     let start = Instant::now();
     work_t(tekton_bp);
     let duration = start.elapsed();
 
-    println!("Tekton (128bit)(perm, byte): 100K nonces: {0:?}", duration);
+    println!("Tekton (128bit)(faster, byte): 100K nonces: {0:?}", duration);
 
     let tekton_br = Tekton128::new(key.to_be_bytes(),
-    Flags { permute: Permute::ROTATE, mode: Mode::BYTE });
+    Flags { rounds: Rounds::SAFER, mode: Mode::BYTE });
 
     let start = Instant::now();
     work_t(tekton_br);
     let duration = start.elapsed();
 
-    println!("Tekton (128bit)(rot, byte): 100K nonces: {0:?}", duration);
+    println!("Tekton (128bit)(safer, byte): 100K nonces: {0:?}", duration);
 
     let tekton_ip = Tekton128::new(key.to_be_bytes(),
-    Flags { permute: Permute::PERMUTE, mode: Mode::INT });
+    Flags { rounds: Rounds::FASTER, mode: Mode::INT });
 
     let start = Instant::now();
     work_t(tekton_ip);
     let duration = start.elapsed();
 
-    println!("Tekton (128bit)(perm, int): 100K nonces: {0:?}", duration);
+    println!("Tekton (128bit)(faster, int): 100K nonces: {0:?}", duration);
 
     let tekton_ir = Tekton128::new(key.to_be_bytes(),
-    Flags { permute: Permute::ROTATE, mode: Mode::INT });
+    Flags { rounds: Rounds::SAFER, mode: Mode::INT });
 
     let start = Instant::now();
     work_t(tekton_ir);
     let duration = start.elapsed();
 
-    println!("Tekton (128bit)(rot, int): 100K nonces: {0:?}", duration);
+    println!("Tekton (128bit)(safer, int): 100K nonces: {0:?}", duration);
 
 
     let start = Instant::now();
@@ -133,40 +133,40 @@ fn test_compare_perfomances_128(){
     };
 
     let tekton_bp = Tekton256::new(key,
-        Flags { permute: Permute::PERMUTE, mode: Mode::BYTE });
+        Flags { rounds: Rounds::FASTER, mode: Mode::BYTE });
 
     let start = Instant::now();
     work_t(tekton_bp);
     let duration = start.elapsed();
 
-    println!("Tekton (256bit)(perm, byte): 100K nonces: {0:?}", duration);
+    println!("Tekton (256bit)(faster, byte): 100K nonces: {0:?}", duration);
 
     let tekton_br = Tekton256::new(key,
-    Flags { permute: Permute::ROTATE, mode: Mode::BYTE });
+    Flags { rounds: Rounds::SAFER, mode: Mode::BYTE });
 
     let start = Instant::now();
     work_t(tekton_br);
     let duration = start.elapsed();
 
-    println!("Tekton (256bit)(rot, byte): 100K nonces: {0:?}", duration);
+    println!("Tekton (256bit)(safer, byte): 100K nonces: {0:?}", duration);
 
     let tekton_ip = Tekton256::new(key,
-    Flags { permute: Permute::PERMUTE, mode: Mode::INT });
+    Flags { rounds: Rounds::FASTER, mode: Mode::INT });
 
     let start = Instant::now();
     work_t(tekton_ip);
     let duration = start.elapsed();
 
-    println!("Tekton (256bit)(perm, int): 100K nonces: {0:?}", duration);
+    println!("Tekton (256bit)(faster, int): 100K nonces: {0:?}", duration);
 
     let tekton_ir = Tekton256::new(key,
-    Flags { permute: Permute::ROTATE, mode: Mode::INT });
+    Flags { rounds: Rounds::SAFER, mode: Mode::INT });
 
     let start = Instant::now();
     work_t(tekton_ir);
     let duration = start.elapsed();
 
-    println!("Tekton (256bit)(rot, int): 100K nonces: {0:?}", duration);
+    println!("Tekton (256bit)(safer, int): 100K nonces: {0:?}", duration);
 
 
     let a = dec[99999][0];
