@@ -44,6 +44,7 @@ pub fn print_binary(){
 
 pub struct Histogram<const F:usize>{
     bins: [u32; F],
+    #[allow(dead_code)]
     milestones: [u128; F]
 }
 
@@ -99,10 +100,12 @@ impl<const F:usize> Histogram<F> {
 
 
 
-use bitreader::BitReader;
+
 
 #[test]
 pub fn find_best_substitution(){
+    use bitreader::BitReader;
+
     let mut primes: [u8; 256] = [0; 256];
 
     for i in 0..256 {
@@ -130,7 +133,7 @@ pub fn find_best_substitution(){
             let mut bri = BitReader::new(&_ri);
 
             let mut count = 0;
-            for j in 0..8 {
+            for _ in 0..8 {
                 if bi.read_bool() != bri.read_bool() {
                     count += 1;
                 }

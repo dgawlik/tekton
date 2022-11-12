@@ -42,6 +42,7 @@ impl Tekton128 {
 
             Mode::BYTE => {
                 let mut state = simd::u8x16::from_array(*payload);
+               
                 if self.flags.rounds == Rounds::SAFER {
                     state = encrypt_round_b(state, self.keys[0]);
                 }
@@ -61,16 +62,15 @@ impl Tekton128 {
                 };
              
                 let mut state = simd::u32x4::from_array(payload_i);
-                state = diffusion_i(state, false);
-                state = diffusion_i(state, true);
-                state = encrypt_round_i(state, self.keys[0]);
-                state = encrypt_round_i(state, self.keys[1]);
-                state = diffusion_i(state, false);
-                state = diffusion_i(state, true);
+               
+                
+                if self.flags.rounds == Rounds::SAFER {
+                    state = encrypt_round_i(state, self.keys[0]);
+                }
+                
+                state = encrypt_round_i(state, self.keys[1]);   
                 state = encrypt_round_i(state, self.keys[2]);
                 state = encrypt_round_i(state, self.keys[3]);
-                state = diffusion_i(state, false);
-                state = diffusion_i(state, true);
                 state = encrypt_round_i(state, self.keys[4]);
                 
     
@@ -96,6 +96,7 @@ impl Tekton128 {
                 if self.flags.rounds == Rounds::SAFER {
                     state = decrypt_round_b(state, self.keys[0]);
                 }
+
                 *cipher = *state.as_array();
             },
 
@@ -107,16 +108,12 @@ impl Tekton128 {
                 let mut state = simd::u32x4::from_array(payload_i);
                 
                 state = decrypt_round_i(state, self.keys[4]);
-                state = diffusion_i(state, true);
-                state = diffusion_i(state, false);
                 state = decrypt_round_i(state, self.keys[3]);
                 state = decrypt_round_i(state, self.keys[2]);
-                state = diffusion_i(state, true);
-                state = diffusion_i(state, false);
                 state = decrypt_round_i(state, self.keys[1]);
-                state = decrypt_round_i(state, self.keys[0]);
-                state = diffusion_i(state, true);
-                state = diffusion_i(state, false);
+                if self.flags.rounds == Rounds::SAFER {
+                    state = decrypt_round_i(state, self.keys[0]);
+                }
     
                 *cipher = unsafe {
                     std::mem::transmute::<[u32; 4], [u8; 16]>(*state.as_array())

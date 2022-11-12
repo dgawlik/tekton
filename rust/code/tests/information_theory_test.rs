@@ -1,33 +1,19 @@
 use tekton::imp::b128::Tekton128;
 use bitreader::BitReader;
 
-use std::time::{Instant};
 use rand::{Rng};
 use tekton::imp::util::{Histogram};
 use rand_distr::{Normal, Distribution};
 
 use aes::{Aes128};
 use aes::cipher::{
-    BlockEncrypt, BlockDecrypt, KeyInit,
+    BlockEncrypt, KeyInit,
     generic_array::GenericArray,
 };
 
 use tekton::imp::{Flags, Mode, Rounds};
 
 
-
-fn rand_u256() -> [u8; 32]{
-    let mut rng = rand::thread_rng();
-    let normal = Normal::new(u128::MAX as f64, (u128::MAX as f64)/10 as f64).unwrap();
-    let lo_a: f64 = normal.sample(&mut rng);
-    let hi_a: f64 = normal.sample(&mut rng);
-
-    let mut a: [u8; 32] = [0; 32];
-    a[..16].copy_from_slice(&(lo_a as u128 * u128::MAX).to_be_bytes());
-    a[16..32].copy_from_slice(&(hi_a as u128 * u128::MAX).to_be_bytes());
-
-    return a;
-}
 
 
 
@@ -70,7 +56,7 @@ fn test_compare_statistics_128(){
     let confusion_t = |tekton: Tekton128| {
         
 
-        let mut C: [f64; 100] = [0.0; 100];
+        let mut c: [f64; 100] = [0.0; 100];
 
         for j in 0..100 {
             let mut rng = rand::thread_rng();
@@ -95,7 +81,7 @@ fn test_compare_statistics_128(){
                 let mut rdr1 = BitReader::new(&enc_p1);
 
                 let mut different = 0;
-                for j in 0..128 {
+                for _ in 0..128 {
                     let b0 = rdr0.read_bool().unwrap();
                     let b1 = rdr1.read_bool().unwrap();
 
@@ -107,10 +93,10 @@ fn test_compare_statistics_128(){
             }
 
             let conf: f64 = conf.into_iter().sum();
-            C[j] = conf/128.0;
+            c[j] = conf/128.0;
         }
 
-        let avg: f64 = C.into_iter().sum();
+        let avg: f64 = c.into_iter().sum();
         return avg/100.0;
     };
 
@@ -152,7 +138,7 @@ fn test_compare_statistics_128(){
             let mut rdr1 = BitReader::new(&enc_p1);
 
             let mut different = 0;
-            for j in 0..128 {
+            for _ in 0..128 {
                 let b0 = rdr0.read_bool();
                 let b1 = rdr1.read_bool();
 
