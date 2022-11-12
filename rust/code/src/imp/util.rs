@@ -226,7 +226,7 @@ pub fn find_best_substitution(){
 
 #[test]
 pub fn calculate_inverse_permutation(){
-    let x: [u8; 16] = [  5, 6,7,4,   9, 10,11, 8,   13, 14,15,12,    1, 2,3,0];
+    let x: [u8; 16] = [  5, 6,7,4,  13, 14,15,12,  9, 10,11, 8, 1, 2,3,0];
     let mut inv_x: [u8; 16] = [0; 16];
 
     for i in 0..16 {

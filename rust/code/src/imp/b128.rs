@@ -7,9 +7,11 @@ use crate::imp::{Flags, Mode};
 
 use super::primitives::*;
 
+use simd::Simd;
+
 
 pub struct Tekton128 {
-    keys: [[u8; 16]; 5],
+    keys: [Simd<u8, 16>; 5],
     flags: Flags
 }
 
@@ -17,11 +19,11 @@ impl Tekton128 {
 
     pub fn new(key: [u8; 16], flags: Flags) -> Tekton128{
 
-        let mut keys: [[u8; 16]; 5] = [[0; 16]; 5];
+        let mut keys: [Simd<u8, 16>; 5] = [simd::u8x16::splat(0); 5];
 
         for i in 0..5 {
             let bytes = key.map(|x| (x << i).wrapping_mul(113));
-            let ki = bytes;
+            let ki = simd::u8x16::from_array(bytes);
             keys[i] = ki;
         }
 
@@ -44,7 +46,7 @@ impl Tekton128 {
                 state = encrypt_round_b(state, self.keys[1], &self.flags);   
                 state = encrypt_round_b(state, self.keys[2], &self.flags);
                 state = encrypt_round_b(state, self.keys[3], &self.flags);
-                state = encrypt_round_b(state, self.keys[4], &self.flags);
+                // state = encrypt_round_b(state, self.keys[4], &self.flags);
                 
                 *payload = *state.as_array();
             },
@@ -83,7 +85,7 @@ impl Tekton128 {
             Mode::BYTE => {
                 let mut state = simd::u8x16::from_array(*cipher);
                
-                state = decrypt_round_b(state, self.keys[4], &self.flags);
+                // state = decrypt_round_b(state, self.keys[4], &self.flags);
                 state = decrypt_round_b(state, self.keys[3], &self.flags);
                 state = decrypt_round_b(state, self.keys[2], &self.flags);
                 state = decrypt_round_b(state, self.keys[1], &self.flags);

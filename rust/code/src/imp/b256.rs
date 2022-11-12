@@ -6,10 +6,10 @@ use rand::{Rng};
 
 use super::primitives::*;
 use crate::imp::{Flags, Mode};
-
+use std::simd::Simd;
 
 pub struct Tekton256 {
-    keys: [[u8; 16]; 8],
+    keys: [Simd<u8, 16>; 8],
     flags: Flags
 }
 
@@ -17,7 +17,7 @@ impl Tekton256 {
 
     pub fn new(key: [u8; 32], flags: Flags) -> Tekton256{
 
-        let mut keys: [[u8; 16]; 8] = [[0; 16]; 8];
+        let mut keys: [Simd<u8, 16>; 8] = [simd::u8x16::splat(0); 8];
 
         for i in 0..8 {
             let bytes = key.map(|x| (x << i).wrapping_mul(113));
@@ -28,7 +28,7 @@ impl Tekton256 {
             for i in 0..16 {
                 lo[i] ^= hi[i];
             }
-            keys[i] = lo;
+            keys[i] = simd::u8x16::from_array(lo);
         }
 
         return Tekton256 {
