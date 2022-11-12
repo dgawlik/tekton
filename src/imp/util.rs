@@ -1,51 +1,167 @@
+use num::{self, integer::Roots};
+use bitreader::BitReader;
+use is_prime;
 
 
-#[allow(dead_code)]
-fn gcd_extended(a: u128, b:u128, x: &mut u128, y: &mut u128) -> u128{
-    if a == 0 {
-        *x = 0_u128;
-        *y = 1_u128;
-        return b;
+
+pub trait NumUtil<T> {
+
+    fn hamming_distance(&self, other: &T) -> i32;
+
+    fn sbox_sanity(&self);
+
+    fn print_binary(&self);
+
+    fn is_prime(&self) -> bool;
+
+    fn inverse(&self) -> T;
+}
+
+impl NumUtil<u8> for u8 {
+    
+    fn hamming_distance(&self, other: &u8) -> i32 {
+        let s = self.to_be_bytes();
+        let o = other.to_be_bytes();
+
+        let mut sr = BitReader::new(&s);
+        let mut or = BitReader::new(&o);
+
+        let mut count = 0;
+        for _ in 0..8 {
+            if sr.read_bool() != or.read_bool() {
+                count += 1;
+            }
+        }
+        return count;
     }
-    else {
-        let mut x1: u128 = 0_u128;
-        let mut y1: u128 = 0_u128;
 
-        let gcd = gcd_extended(b % a, a, &mut x1, &mut y1);
+    fn sbox_sanity(&self) {
+        let p = *self as u16;
 
-        *x = y1.wrapping_sub((b/a).wrapping_mul(x1));
-        *y = x1;
-
-        return gcd;
+        for i in 0..256_u16 {
+            let r = (i * p) % 256;
+            if r == i {
+                println!("identity on {}", i)
+            }
+        }
     }
+
+    fn print_binary(&self) {
+        println!("{:b}", self);
+    }
+
+    fn is_prime(&self) -> bool {
+        return is_prime::is_prime(&self.to_string());
+    }
+    
+    fn inverse(&self) -> u8 {
+        fn gcd_extended(a: u16, b:u16, x: &mut u16, y: &mut u16) -> u16{
+            if a == 0 {
+                *x = 0_u16;
+                *y = 1_u16;
+                return b;
+            }
+            else {
+                let mut x1: u16 = 0_u16;
+                let mut y1: u16 = 0_u16;
+        
+                let gcd = gcd_extended(b % a, a, &mut x1, &mut y1);
+        
+                *x = y1.wrapping_sub((b/a).wrapping_mul(x1));
+                *y = x1;
+        
+                return gcd;
+            }
+        }
+        
+        fn mod_inverse(a: u8) -> u8 {
+            let m = 256_u16;
+        
+            let mut x: u16 = 0;
+            let mut y: u16 = 0;
+        
+            gcd_extended(a.into(), m, &mut x, &mut y);
+            return (((x % m) + m) % m) as u8;
+        }
+
+        return mod_inverse(*self);
+    }
+
 }
 
-#[allow(dead_code)]
-fn mod_inverse(a: u64) -> u64 {
-    let m = 9_223_372_036_854_775_808_u128;
+impl NumUtil<u16> for u16 {
+    
+    fn hamming_distance(&self, other: &u16) -> i32 {
+        let s = self.to_be_bytes();
+        let o = other.to_be_bytes();
 
-    let mut x: u128 = 0;
-    let mut y: u128 = 0;
+        let mut sr = BitReader::new(&s);
+        let mut or = BitReader::new(&o);
 
-    gcd_extended(a.into(), m, &mut x, &mut y);
-    return (((x % m) + m) % m) as u64;
+        let mut count = 0;
+        for _ in 0..16 {
+            if sr.read_bool() != or.read_bool() {
+                count += 1;
+            }
+        }
+        return count;
+    }
+
+    fn sbox_sanity(&self) {
+        let p = *self as u32;
+
+        for i in 0..65536_u32 {
+            let r = (i * p) % 65536;
+            if r == i {
+                println!("identity on {}", i)
+            }
+        }
+    }
+
+    fn print_binary(&self) {
+        println!("{:b}", self);
+    }
+
+    fn is_prime(&self) -> bool {
+        return is_prime::is_prime(&self.to_string());
+    }
+    
+    fn inverse(&self) -> u16 {
+        fn gcd_extended(a: u32, b:u32, x: &mut u32, y: &mut u32) -> u32{
+            if a == 0 {
+                *x = 0_u32;
+                *y = 1_u32;
+                return b;
+            }
+            else {
+                let mut x1: u32 = 0_u32;
+                let mut y1: u32 = 0_u32;
+        
+                let gcd = gcd_extended(b % a, a, &mut x1, &mut y1);
+        
+                *x = y1.wrapping_sub((b/a).wrapping_mul(x1));
+                *y = x1;
+        
+                return gcd;
+            }
+        }
+        
+        fn mod_inverse(a: u16) -> u16 {
+            let m = 65536_u32;
+        
+            let mut x: u32 = 0;
+            let mut y: u32 = 0;
+        
+            gcd_extended(a.into(), m, &mut x, &mut y);
+            return (((x % m) + m) % m) as u16;
+        }
+
+        return mod_inverse(*self);
+    }
+
 }
 
-#[test]
-pub fn calc_inverse(){
-    println!("{}", mod_inverse(0b01001111_01001111_01001111_01001111_01001111_01001111_01001111_01001111));
-    println!("{}", (1167515447703136175 as u64).wrapping_mul(0b01001111_01001111_01001111_01001111_01001111_01001111_01001111_01001111));
-}
 
-#[test]
-pub fn calc_fitness(){
-    println!("{}", fitness(0b01001111_01001111_01001111_01001111_01001111_01001111_01001111_01001111));
-}
-
-#[test]
-pub fn print_binary(){
-    println!("{:b}", 79);
-}
 
 pub struct Histogram<const F:usize>{
     bins: [u32; F],
@@ -104,20 +220,14 @@ impl<const F:usize> Histogram<F> {
 }
 
 
+pub fn primes<const L: usize>() -> Vec<i32>{
+    let mut primes: [i32; L] = [0; L];
 
-
-
-#[test]
-pub fn find_best_substitution(){
-    use bitreader::BitReader;
-
-    let mut primes: [u8; 256] = [0; 256];
-
-    for i in 0..256 {
-        primes[i] = i as u8; 
+    for i in 0..L {
+        primes[i] = i as i32; 
     }
 
-    for i in 2..16 {
+    for i in 2..L.sqrt() {
         let mut it = 2;
         while it*i < 256 {
             primes[it*i] = 0;
@@ -125,32 +235,49 @@ pub fn find_best_substitution(){
         }
     }
 
-    for p in primes.into_iter().filter(|x| *x != 1 && *x != 0){
+    return primes.into_iter().filter(|x| *x != 1 && *x != 0).collect()
+}
+
+
+
+#[test]
+pub fn find_best_substitution(){
+
+    for p in primes::<256>(){
         
         let mut hamming_dists: [f64; 256] = [0.0; 256];
         for i in 0..256 {
-            let ri = (i as u8).wrapping_mul(p);
-
-            let _i = (i as u8).to_be_bytes();
-            let _ri = ri.to_be_bytes();
-
-            let mut bi = BitReader::new(&_i);
-            let mut bri = BitReader::new(&_ri);
-
-            let mut count = 0;
-            for _ in 0..8 {
-                if bi.read_bool() != bri.read_bool() {
-                    count += 1;
-                }
-            }
-
-            hamming_dists[i] = count as f64;
+            hamming_dists[i] = (i as u8).hamming_distance(&(p as u8)) as f64;
         }
 
         let mut avg: f64 = hamming_dists.into_iter().sum();
         avg /= 256.0;
         println!("{} avg hamming distance: {}", p, avg);
     }
+}
+
+#[test]
+pub fn find_best_substitution_u16(){
+    use rand::{Rng};
+
+    for i in 0..2_000 {
+        let p: u16 = rand::thread_rng().gen();
+        
+        let mut hamming_dists: [f64; 1000] = [0.0; 1000];
+        for i in 0..1000 {
+            hamming_dists[i] = (i as u16).hamming_distance(&(p as u16)) as f64;
+        }
+
+        let mut avg: f64 = hamming_dists.into_iter().sum();
+        avg /= 1000.0;
+        println!("{} avg hamming distance: {}", p, avg);
+    }
+}
+
+#[test]
+pub fn print_inverse(){
+    println!("{}", 38805_u16.inverse());
+    println!("{}", 38805_u16.inverse().wrapping_mul(38805_u16));
 }
 
 
