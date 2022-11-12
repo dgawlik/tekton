@@ -33,13 +33,18 @@ fn mod_inverse(a: u64) -> u64 {
 
 #[test]
 pub fn calc_inverse(){
-    println!("{}", mod_inverse(0b0111111111111111111111111111111111111111111111111111111111110101));
-    println!("{}", (5869418568907584605 as u64).wrapping_mul(0b0111111111111111111111111111111111111111111111111111111111110101));
+    println!("{}", mod_inverse(0b01001111_01001111_01001111_01001111_01001111_01001111_01001111_01001111));
+    println!("{}", (1167515447703136175 as u64).wrapping_mul(0b01001111_01001111_01001111_01001111_01001111_01001111_01001111_01001111));
+}
+
+#[test]
+pub fn calc_fitness(){
+    println!("{}", fitness(0b01001111_01001111_01001111_01001111_01001111_01001111_01001111_01001111));
 }
 
 #[test]
 pub fn print_binary(){
-    println!("{:b}", 127);
+    println!("{:b}", 79);
 }
 
 pub struct Histogram<const F:usize>{
@@ -149,13 +154,53 @@ pub fn find_best_substitution(){
 }
 
 
-// 0b1111111111111111111111111111111111111111111111111111011101110010
-// 0b0111111111111111111111111111111111111111111111111111111111110101
+
+pub fn fitness(p: u64) -> f64{
+    use bitreader::BitReader;
+    use rand::{Rng};
+
+    let mut hamming_dists: [f64; 1_000] = [0.0; 1_000];
+    for i in 0..1_000 {
+        let num: u64 = rand::thread_rng().gen();
+        let ri = num.wrapping_mul(p);
+
+        let _i = num.to_be_bytes();
+        let _ri = ri.to_be_bytes();
+
+        let mut bi = BitReader::new(&_i);
+        let mut bri = BitReader::new(&_ri);
+
+        let mut count = 0;
+        let mut ones = 0;
+        for _ in 0..64 {
+            let bbi = bi.read_bool().unwrap();
+            let bbri = bri.read_bool().unwrap();
+            // if bbi != bbri {
+            //     count += 1;
+            // }
+            if bbri {
+                ones += 1;
+            }
+        }
+
+        count += 32-(ones - 32_i32).abs();
+
+        hamming_dists[i] = count as f64;
+    }
+
+    let avg: f64 = hamming_dists.into_iter().sum();
+    avg / 1_000.0
+}
+
+
+
+// 0b0111111111111111111111111111111111111111111111111111111111111111
 // #[test]
 // pub fn find_best_substitution_int(){
 //     use genetic_algorithm::strategy::evolve::prelude::*;
 //     use rand::{Rng};
 //     extern crate is_prime;
+//     use bitreader::BitReader;
 //     use is_prime::*;
     
 //     let genotype = BinaryGenotype::builder() 
@@ -171,11 +216,11 @@ pub fn find_best_substitution(){
 //         fn calculate_for_chromosome(&mut self, chromosome: &Chromosome<Self::Genotype>) -> Option<FitnessValue> {
             
 //             let mut p: u64 = 0;
-//             p |= 0b_10000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000;
+//             p |= 0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001;
 //             for i in 1..64 {
-//                 p >>= 1;
+//                 p <<= 1;
 //                 if chromosome.genes[i] {
-//                     p |= 0b_10000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000;
+//                     p |= 0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001;
 //                 }  
 //             }
 
@@ -183,29 +228,7 @@ pub fn find_best_substitution(){
 //             //     return Some(0 as FitnessValue)
 //             // }
 
-//             let mut hamming_dists: [f64; 1_000] = [0.0; 1_000];
-//             for i in 0..1_000 {
-//                 let num: u64 = rand::thread_rng().gen();
-//                 let ri = num.wrapping_mul(p);
-
-//                 let _i = num.to_be_bytes();
-//                 let _ri = ri.to_be_bytes();
-
-//                 let mut bi = BitReader::new(&_i);
-//                 let mut bri = BitReader::new(&_ri);
-
-//                 let mut count = 0;
-//                 for j in 0..64 {
-//                     if bi.read_bool() != bri.read_bool() {
-//                         count += 1;
-//                     }
-//                 }
-
-//                 hamming_dists[i] = count as f64;
-//             }
-
-//             let mut avg: f64 = hamming_dists.into_iter().sum();
-//             avg /= 1_000.0;
+//             let avg = fitness(p);
 //             println!("fitness: {}", avg);
 //             Some(avg as FitnessValue)
 //         }
@@ -215,7 +238,7 @@ pub fn find_best_substitution(){
 //     let evolve = Evolve::builder()
 //         .with_genotype(genotype)
 //         .with_population_size(100)        // evolve with 100 chromosomes
-//         .with_target_fitness_score(60)   // goal is 100 times true in the best chromosome
+//         .with_target_fitness_score(30)   // goal is 100 times true in the best chromosome
 //         .with_fitness(CountTrue)          // count the number of true values in the chromosomes
 //         .with_crossover(CrossoverUniform(true)) // crossover all individual genes between 2 chromosomes for offspring
 //         .with_mutate(MutateOnce(0.2))     // mutate a single gene with a 20% probability per chromosome

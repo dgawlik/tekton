@@ -103,8 +103,8 @@ const INV_S: Simd<u8, 16> = simd::u8x16::from_array([63; 16]);
 const SI: Simd<u32, 4> = simd::u32x4::from_array([1_347_249_345; 4]);
 const INV_SI: Simd<u32, 4> = simd::u32x4::from_array([112_012_097; 4]);
 
-const E: Simd<u64, 2> = simd::u64x2::from_array([0b01111111_10111111_01111111_10111111_01111111_10111111_01111111_10111111; 2]);
-const INV_E: Simd<u64, 2> = simd::u64x2::from_array([2218482843833888831; 2]);
+const E: Simd<u64, 2> = simd::u64x2::from_array([0b01001111_01001111_01001111_01001111_01001111_01001111_01001111_01001111; 2]);
+const INV_E: Simd<u64, 2> = simd::u64x2::from_array([1167515447703136175; 2]);
 
 
 

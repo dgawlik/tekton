@@ -45,9 +45,9 @@ impl Tekton128 {
                
                 if self.flags.rounds == Rounds::SAFER {
                     state = encrypt_round_b(state, self.keys[0]);
+                    state = encrypt_round_b(state, self.keys[1]); 
                 }
                 
-                state = encrypt_round_b(state, self.keys[1]);   
                 state = encrypt_round_b(state, self.keys[2]);
                 state = encrypt_round_b(state, self.keys[3]);
                 state = encrypt_round_b(state, self.keys[4]);
@@ -92,8 +92,9 @@ impl Tekton128 {
                 state = decrypt_round_b(state, self.keys[4]);
                 state = decrypt_round_b(state, self.keys[3]);
                 state = decrypt_round_b(state, self.keys[2]);
-                state = decrypt_round_b(state, self.keys[1]);
+                
                 if self.flags.rounds == Rounds::SAFER {
+                    state = decrypt_round_b(state, self.keys[1]);
                     state = decrypt_round_b(state, self.keys[0]);
                 }
 
