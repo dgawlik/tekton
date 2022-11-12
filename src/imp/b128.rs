@@ -3,7 +3,7 @@ use std::simd;
 #[allow(unused)]
 use rand::{Rng};
 
-use crate::imp::{Flags, Mode};
+use crate::imp::{Flags};
 
 use super::{primitives::*, Rounds};
 
@@ -38,96 +38,47 @@ impl Tekton128 {
     #[inline]
     pub fn encrypt(&self, payload: &mut [u8; 16]){
 
-        match self.flags.mode {
 
-            Mode::BYTE => {
-                let mut state = simd::u8x16::from_array(*payload);
-               
-                if self.flags.rounds == Rounds::SAFER {
-                    state = encrypt_round_b(state, self.keys[0]);
-                    state = encrypt_round_b(state, self.keys[1]); 
-                }
-                
-                state = encrypt_round_b(state, self.keys[2]);
-                state = encrypt_round_b(state, self.keys[3]);
-                state = encrypt_round_b(state, self.keys[4]);
-                
-                
-                *payload = *state.as_array();
-            },
-
-            Mode::INT => {
-                let payload_i = unsafe {
-                    std::mem::transmute::<[u8; 16], [u16; 8]>(*payload)
-                };
-             
-                let mut state = simd::u16x8::from_array(payload_i);
-               
-                
-                if self.flags.rounds == Rounds::SAFER {
-                    state = encrypt_round_i(state, self.keys[0]);
-                }
-                
-                state = encrypt_round_i(state, self.keys[1]);   
-                state = encrypt_round_i(state, self.keys[2]);
-                state = encrypt_round_i(state, self.keys[3]);
-                state = encrypt_round_i(state, self.keys[4]);
-                
-    
-                *payload = unsafe {
-                    std::mem::transmute::<[u16; 8], [u8; 16]>(*state.as_array())
-                };
-            }
-
+        let mut state = simd::u8x16::from_array(*payload);
+        
+        if self.flags.rounds == Rounds::SAFER {
+            state = encrypt_round_b(state, self.keys[0]);
+            state = encrypt_round_b(state, self.keys[1]); 
         }
+        
+        state = encrypt_round_b(state, self.keys[2]);
+        state = encrypt_round_b(state, self.keys[3]);
+        state = encrypt_round_b(state, self.keys[4]);
+        
+        
+        *payload = *state.as_array();
+        
+
     }
 
     #[inline]
     pub fn decrypt(&self, cipher: &mut [u8; 16]){
-        match self.flags.mode {
+       
+        let mut state = simd::u8x16::from_array(*cipher);
+        
+        state = decrypt_round_b(state, self.keys[4]);
+        state = decrypt_round_b(state, self.keys[3]);
+        state = decrypt_round_b(state, self.keys[2]);
+        
+        if self.flags.rounds == Rounds::SAFER {
+            state = decrypt_round_b(state, self.keys[1]);
+            state = decrypt_round_b(state, self.keys[0]);
+        }
 
-            Mode::BYTE => {
-                let mut state = simd::u8x16::from_array(*cipher);
-               
-                state = decrypt_round_b(state, self.keys[4]);
-                state = decrypt_round_b(state, self.keys[3]);
-                state = decrypt_round_b(state, self.keys[2]);
-                
-                if self.flags.rounds == Rounds::SAFER {
-                    state = decrypt_round_b(state, self.keys[1]);
-                    state = decrypt_round_b(state, self.keys[0]);
-                }
-
-                *cipher = *state.as_array();
-            },
-
-            Mode::INT => {
-                let payload_i = unsafe {
-                    std::mem::transmute::<[u8; 16], [u16; 8]>(*cipher)
-                };
-             
-                let mut state = simd::u16x8::from_array(payload_i);
-                
-                state = decrypt_round_i(state, self.keys[4]);
-                state = decrypt_round_i(state, self.keys[3]);
-                state = decrypt_round_i(state, self.keys[2]);
-                state = decrypt_round_i(state, self.keys[1]);
-                if self.flags.rounds == Rounds::SAFER {
-                    state = decrypt_round_i(state, self.keys[0]);
-                }
+        *cipher = *state.as_array();
     
-                *cipher = unsafe {
-                    std::mem::transmute::<[u16; 8], [u8; 16]>(*state.as_array())
-                };
-            }
-        };
     }
 }
 
 
 #[test]
 fn test_encrypt_decrypt(){
-    use crate::imp::{Flags, Mode, Rounds};
+    use crate::imp::{Flags, Rounds};
     let key: u128 = rand::thread_rng().gen();
 
 
@@ -150,26 +101,12 @@ fn test_encrypt_decrypt(){
     test_in_loop(
         Tekton128::new(key.to_be_bytes(), 
         Flags {
-            rounds: Rounds::FASTER, 
-            mode: Mode::BYTE}));
+            rounds: Rounds::FASTER }));
 
     test_in_loop(
         Tekton128::new(key.to_be_bytes(), 
         Flags {
-            rounds: Rounds::SAFER, 
-            mode: Mode::BYTE}));
-
-    test_in_loop(
-        Tekton128::new(key.to_be_bytes(), 
-        Flags {
-            rounds: Rounds::FASTER, 
-            mode: Mode::INT}));
-
-    test_in_loop(
-        Tekton128::new(key.to_be_bytes(), 
-        Flags {
-            rounds: Rounds::SAFER, 
-            mode: Mode::INT}));
+            rounds: Rounds::SAFER }));
 
     
 }

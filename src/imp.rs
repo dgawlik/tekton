@@ -14,13 +14,6 @@ pub enum Rounds {
 }
 
 
-pub enum Mode {
-    BYTE,
-    INT
-}
-
-
 pub struct Flags {
     pub rounds: Rounds,
-    pub mode: Mode
 }

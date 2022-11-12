@@ -276,8 +276,13 @@ pub fn find_best_substitution_u16(){
 
 #[test]
 pub fn print_inverse(){
-    println!("{}", 38805_u16.inverse());
-    println!("{}", 38805_u16.inverse().wrapping_mul(38805_u16)); //64445
+    println!("{}", 7521_u16.inverse());
+    println!("{}", 7521_u16.inverse().wrapping_mul(7521_u16)); //18081
+}
+
+#[test]
+pub fn print_safe_sbox(){
+    7521_u16.sbox_sanity();
 }
 
 

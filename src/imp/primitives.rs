@@ -100,8 +100,8 @@ pub(crate) use substitute;
 const S: Simd<u8, 16> = simd::u8x16::from_array([191; 16]);
 const INV_S: Simd<u8, 16> = simd::u8x16::from_array([63; 16]);
 
-const SS: Simd<u16, 8> = simd::u16x8::from_array([38805; 8]);
-const INV_SS: Simd<u16, 8> = simd::u16x8::from_array([64445; 8]);
+const SS: Simd<u16, 8> = simd::u16x8::from_array([7521_u16; 8]);
+const INV_SS: Simd<u16, 8> = simd::u16x8::from_array([18081; 8]);
 
 const E: Simd<u64, 2> = simd::u64x2::from_array([0b01001111_01001111_01001111_01001111_01001111_01001111_01001111_01001111; 2]);
 const INV_E: Simd<u64, 2> = simd::u64x2::from_array([1167515447703136175; 2]);
