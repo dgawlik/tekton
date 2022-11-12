@@ -31,15 +31,12 @@ fn rand_u256() -> [u8; 32]{
 fn test_compare_perfomances_128(){
     let key: u128 = rand::thread_rng().gen();
 
-    let mut payload: [[u8; 16]; 100_000] = [[0; 16]; 100_000];
+    let mut payload: [u8; 16] = [0; 16];
 
-    for i in 0..100_000 {
-        payload[i] = rand::thread_rng().gen::<u128>().to_be_bytes();
-    }
+    payload = rand::thread_rng().gen::<u128>().to_be_bytes();
+    
 
-    let mut enc: [[u8; 16]; 100_000] = [[0; 16]; 100_000];
-    let mut dec: [[u8; 16]; 100_000] = [[0; 16]; 100_000];
-
+    let mut enc: [u8; 16] = [0; 16];
 
     let kb = GenericArray::from(key.to_be_bytes());
 
@@ -51,16 +48,15 @@ fn test_compare_perfomances_128(){
     let cipher = Aes128::new(&kb);
 
     let mut work_t = std::hint::black_box(|tekton: Tekton128| {
-        for i in 0..100_000 {
-            enc[i] = payload[i];
-            tekton.encrypt(&mut enc[i]);
-            dec[i] = enc[i];
-            tekton.decrypt(&mut dec[i]);
+        for _ in 0..1_000_000 {
+            enc = payload;
+            tekton.encrypt(&mut enc);
+            tekton.decrypt(&mut enc);
         }
     });
 
     let mut work_a = || {
-        for _ in 0..100_000 {
+        for _ in 0..1_000_000 {
             cipher.encrypt_block(&mut block);
             cipher.decrypt_block(&mut block);
         }
@@ -73,7 +69,7 @@ fn test_compare_perfomances_128(){
     work_t(tekton_bp);
     let duration = start.elapsed();
 
-    println!("Tekton (128bit)(3x): 100K nonces: {0:?}", duration);
+    println!("Tekton (128bit)(3x): 1M nonces: {0:?}", duration);
 
     let tekton_br = Tekton128::new(key.to_be_bytes(),
     Flags { rounds: Rounds::SAFER });
@@ -82,33 +78,30 @@ fn test_compare_perfomances_128(){
     work_t(tekton_br);
     let duration = start.elapsed();
 
-    println!("Tekton (128bit)(5x): 100K nonces: {0:?}", duration);
+    println!("Tekton (128bit)(5x): 1M nonces: {0:?}", duration);
 
     let start = Instant::now();
     work_a();
     let duration = start.elapsed();
 
-    println!("AES (128bit): 100K nonces: {0:?}", duration);
+    println!("AES (128bit): 1M nonces: {0:?}", duration);
 
 
 
     let key = rand_u256();
 
-    let mut payload: [[u8; 16]; 100_000] = [[0; 16]; 100_000];
+    let mut payload: [u8; 16] = [0; 16];
 
-    for i in 0..100_000 {
-        payload[i].copy_from_slice(&rand_u256()[0..16]);
-    }
+    payload = rand::thread_rng().gen::<u128>().to_be_bytes();
+    
 
-    let mut enc: [[u8; 16]; 100_000] = [[0; 16]; 100_000];
-    let mut dec: [[u8; 16]; 100_000] = [[0; 16]; 100_000];
+    let mut enc: [u8; 16] = [0; 16];
 
     let mut work_t = std::hint::black_box(|tekton: Tekton256| {
-        for i in 0..100_000 {
-            enc[i] = payload[i];
-            tekton.encrypt(&mut enc[i]);
-            dec[i] = enc[i];
-            tekton.decrypt(&mut dec[i]);
+        for _ in 0..1_000_000 {
+            enc = payload;
+            tekton.encrypt(&mut enc);
+            tekton.decrypt(&mut enc);
         }
     });
 
@@ -119,7 +112,7 @@ fn test_compare_perfomances_128(){
     work_t(tekton_bp);
     let duration = start.elapsed();
 
-    println!("Tekton (256bit)(3x): 100K nonces: {0:?}", duration);
+    println!("Tekton (256bit)(5x): 1M nonces: {0:?}", duration);
 
     let tekton_br = Tekton256::new(key,
     Flags { rounds: Rounds::SAFER});
@@ -128,5 +121,5 @@ fn test_compare_perfomances_128(){
     work_t(tekton_br);
     let duration = start.elapsed();
 
-    println!("Tekton (256bit)(safer, 5x): 100K nonces: {0:?}", duration);
+    println!("Tekton (256bit)(8x): 1M nonces: {0:?}", duration);
 }
