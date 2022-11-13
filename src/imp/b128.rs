@@ -42,13 +42,13 @@ impl Tekton128 {
         let mut state = simd::u8x16::from_array(*payload);
         
         if self.flags.rounds == Rounds::SAFER {
-            state = encrypt_round_b(state, self.keys[0]);
-            state = encrypt_round_b(state, self.keys[1]); 
+            state = encrypt_round(state, self.keys[0]);
+            state = encrypt_round(state, self.keys[1]); 
         }
         
-        state = encrypt_round_b(state, self.keys[2]);
-        state = encrypt_round_b(state, self.keys[3]);
-        state = encrypt_round_b(state, self.keys[4]);
+        state = encrypt_round(state, self.keys[2]);
+        state = encrypt_round(state, self.keys[3]);
+        state = encrypt_round(state, self.keys[4]);
         
         
         *payload = *state.as_array();
@@ -61,13 +61,13 @@ impl Tekton128 {
        
         let mut state = simd::u8x16::from_array(*cipher);
         
-        state = decrypt_round_b(state, self.keys[4]);
-        state = decrypt_round_b(state, self.keys[3]);
-        state = decrypt_round_b(state, self.keys[2]);
+        state = decrypt_round(state, self.keys[4]);
+        state = decrypt_round(state, self.keys[3]);
+        state = decrypt_round(state, self.keys[2]);
         
         if self.flags.rounds == Rounds::SAFER {
-            state = decrypt_round_b(state, self.keys[1]);
-            state = decrypt_round_b(state, self.keys[0]);
+            state = decrypt_round(state, self.keys[1]);
+            state = decrypt_round(state, self.keys[0]);
         }
 
         *cipher = *state.as_array();
