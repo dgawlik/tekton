@@ -45,6 +45,8 @@ pub fn inv_expansion(a: Simd<u8, 16>) -> Simd<u8, 16> {
 
 
 
+
+
 const S: Simd<u8, 16> = simd::u8x16::from_array([191; 16]);
 const INV_S: Simd<u8, 16> = simd::u8x16::from_array([63; 16]);
 
